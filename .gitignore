@@ -68,3 +68,4 @@ environment.sh
 
 .idea
 
+/.env.yarn
