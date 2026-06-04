@@ -7,7 +7,9 @@ name: Build demo image
 
 on:
   push:
-    branches: [main]
+    # `dev_hub_demo_env` is included so the workflow runs while developing this
+    # branch; once merged you can rely on `main` alone.
+    branches: [main, dev_hub_demo_env]
     paths:
       - 'packages/**'
       - 'plugins/**'
