@@ -12,10 +12,11 @@
 #   * catalog/marketplace/topology data is sourced from the public repo over plain HTTPS
 # Do NOT add any token/secret/clientSecret/password to this file.
 #
-# The only runtime input is APP_BASE_URL — the bare public origin, no path, e.g.
-#   APP_BASE_URL=https://demo.example.com
-# app-backend serves the app, /static and /api all at root from this value, so the
-# reverse proxy in front can be a plain pass-through.
+# The only runtime input is APP_BASE_URL, which MUST end with /tibco/hub, e.g.
+#   APP_BASE_URL=https://demo.example.com/tibco/hub
+# The build, the marketplace TechDocs links, and the API entity `servers` URLs all
+# assume the app lives under /tibco/hub. The reverse proxy strips that prefix before
+# forwarding to the backend (which serves at root).
 define: &docUrl https://docs.tibco.com/go/platform-cp/1.17.0/doc/html#cshid=developer_hub_overview
 app:
   title: TIBCO® Developer Hub

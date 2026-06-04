@@ -7,19 +7,20 @@
 {$DEMO_DOMAIN} {
 	encode gzip
 
-	# The app is served at root (APP_BASE_URL is the bare domain): app-backend
-	# rewrites the HTML <script>/<link> tags to /static/... at runtime.
+	# The whole product assumes it lives under /tibco/hub: the build's publicPath
+	# (so extracted-CSS font URLs are /tibco/hub/static/...), the marketplace
+	# TechDocs in-app links (/tibco/hub/create, /tibco/hub/import-flow, ...), and
+	# the API entity `servers` URLs (/tibco/hub/api/...). So APP_BASE_URL ends with
+	# /tibco/hub and the browser uses /tibco/hub/* for everything.
 	#
-	# BUT font URLs inside the extracted CSS are frozen at BUILD time with the
-	# build's publicPath (/tibco/hub) and are NOT rewritten at runtime. The files
-	# actually live at /static/..., so remap the stale /tibco/hub/static/* paths
-	# back to /static/* (covers all build-baked CSS asset URLs, not just fonts).
-	handle /tibco/hub/static/* {
-		uri replace /tibco/hub/static/ /static/
-		reverse_proxy devhub:7007
-	}
+	# The backend itself serves at root (/, /static, /api), so we strip the
+	# /tibco/hub prefix before proxying — exactly what the production ingress does:
+	#   /tibco/hub/static/x.woff2 -> /static/x.woff2
+	#   /tibco/hub/api/...        -> /api/...
+	#   /tibco/hub/create         -> /create  (SPA route; router basename=/tibco/hub)
+	redir / /tibco/hub/ 308
 
-	handle {
+	handle_path /tibco/hub* {
 		reverse_proxy devhub:7007
 	}
 }
