@@ -1,0 +1,65 @@
+name: Build demo image
+
+# Builds the public demo image (Dockerfile.demo) and pushes it to GHCR.
+# The build runs entirely inside Docker (on GitHub-hosted runners, which have
+# plenty of RAM), so the 2 GB Lightsail host never has to compile anything —
+# it just `docker pull`s the result. See deploy/demo/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'plugins/**'
+      - 'app-config.yaml'
+      - 'app-config.demo-environment.yaml'
+      - 'Dockerfile.demo'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.github/workflows/demo-image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: demo-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # metadata-action lowercases the image name automatically.
+          images: ghcr.io/${{ github.repository }}-demo
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.demo
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

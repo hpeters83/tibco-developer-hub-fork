@@ -1,0 +1,112 @@
+# app-config.demo-environment.yaml
+#
+# Standalone config for the PUBLIC, UNAUTHENTICATED demo environment.
+# Run with:  node packages/backend --config app-config.demo-environment.yaml
+# (passing a single --config disables Backstage's default discovery, so this
+#  file is intentionally complete and self-contained.)
+#
+# SECURITY CONTRACT — this config is what makes the public demo safe:
+#   * guest auth ONLY — no tibco-control-plane / OIDC provider, so no clientId/clientSecret anywhere
+#   * in-memory SQLite — nothing persisted, resets clean on every restart
+#   * NO integrations.github.token — only unauthenticated public GitHub reads
+#   * catalog/marketplace/topology data is sourced from the public repo over plain HTTPS
+# Do NOT add any token/secret/clientSecret/password to this file.
+#
+# The only runtime input is APP_BASE_URL, which MUST include the /tibco/hub path
+# segment (the frontend bundle's publicPath is baked to /tibco/hub at build time),
+# e.g.  APP_BASE_URL=https://demo.example.com/tibco/hub
+define: &docUrl https://docs.tibco.com/go/platform-cp/1.17.0/doc/html#cshid=developer_hub_overview
+app:
+  title: TIBCO® Developer Hub
+  # Must equal backend.baseUrl when using the `app-backend` plugin (single origin).
+  baseUrl: ${APP_BASE_URL}
+  # Hide build-version footer in the public demo.
+  showBuildVersion: false
+  support:
+    url: https://support.tibco.com/s/
+    items:
+      - title: 'TIBCO Support Page'
+        icon: email
+        links:
+          - url: 'https://support.tibco.com/s/'
+            title: 'TIBCO Support'
+      - title: 'TIBCO Documentation Page'
+        icon: docs
+        links:
+          - url: *docUrl
+            title: 'TIBCO® Developer Hub Documentation'
+      - title: 'TIBCO® Developer Hub Open Source Repository'
+        icon: github
+        links:
+          - url: 'https://github.com/TIBCOSoftware/tibco-developer-hub'
+            title: 'TIBCO® Developer Hub Open Source Repository'
+  docUrl: *docUrl
+
+organization:
+  name: TIBCO Software's
+
+backend:
+  auth:
+    # No externalAccess methods — no JWKS / service-to-service tokens in the demo.
+    externalAccess:
+  # baseUrl is the URL browsers use to reach the backend. Frontend and backend
+  # share one origin behind Caddy, so this equals app.baseUrl.
+  baseUrl: ${APP_BASE_URL}
+  listen:
+    port: 7007
+    # Bind all interfaces inside the container; only Caddy is exposed publicly.
+    host: 0.0.0.0
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+  # In-memory database — ephemeral by design.
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+
+integrations:
+  github:
+    - host: github.com
+      # NO token — unauthenticated public reads only (subject to GitHub's
+      # 60 req/hr/IP anonymous rate limit, which is fine for low-traffic catalog refresh).
+
+catalog:
+  # Overrides the example locations from app-config.yaml.
+  locations:
+    - type: url
+      target: https://github.com/TIBCOSoftware/tibco-developer-hub/tree/main/tibco-examples/tibco-examples.yaml
+      rules:
+        - allow:
+            [Group, Template, System, Domain, Location, Component, API, Resource]
+  rules:
+    - allow:
+        [Group, Template, System, Domain, Location, Component, API, Resource]
+
+techdocs:
+  builder: 'local'
+  generator:
+    runIn: 'local'
+  publisher:
+    type: 'local'
+
+enableExperimentalRedirectFlow: true
+
+auth:
+  environment: production
+  providers:
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+  # Guest is the ONLY enabled provider. No tibco-control-plane, no github auth.
+  enableAuthProviders: [guest]
+
+scaffolder:
+  defaultAuthor:
+    name: TIBCO® Developer Hub
+    email: test@test.com
+  defaultCommitMessage: 'Initial commit'
+
+essentialLocations:
+  runScheduler: true
+  frequencyInMinutes: 120
+  locations:
+    - type: url
+      target: https://github.com/TIBCOSoftware/tibco-developer-hub/blob/main/tibco-examples/tibco-essentials.yaml

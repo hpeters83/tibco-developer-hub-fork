@@ -1,0 +1,14 @@
+# Caddyfile — automatic HTTPS (Let's Encrypt) for the public demo.
+# DEMO_DOMAIN is supplied via the environment (see docker-compose.yml / .env).
+#
+# Caddy obtains and renews the TLS certificate automatically, provided the
+# domain's DNS A record points at this host and ports 80/443 are reachable.
+
+{$DEMO_DOMAIN} {
+	encode gzip
+
+	# The frontend bundle is served under /tibco/hub; send the bare root there.
+	redir / /tibco/hub 308
+
+	reverse_proxy devhub:7007
+}

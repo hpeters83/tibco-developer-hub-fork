@@ -1,0 +1,2 @@
+# Never commit the host's filled-in env file.
+.env

@@ -72,3 +72,4 @@ environment.sh
 
 # Local environment variables
 /.env.yarn
+/HugoNotes.txt

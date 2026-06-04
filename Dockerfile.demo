@@ -1,0 +1,143 @@
+# Dockerfile.demo
+#
+# Builds the PUBLIC demo image for the TIBCO Developer Hub.
+# Derived from the repo's production `Dockerfile`, with three differences:
+#   1. Skips `yarn test:all` (and the coverage/test-report copies) so the demo
+#      image builds fast and never fails the demo deploy on an unrelated test.
+#   2. Ships ONLY app-config.demo-environment.yaml (guest-only, no-secrets config)
+#      — the secrets-templated app-config.production.yaml is deliberately absent.
+#   3. Default CMD runs the demo config.
+#
+# Build is intended to run in CI (GitHub Actions) where RAM is ample; the runtime
+# image is small enough to run on a 2 GB host.
+
+# Stage 1 - Create yarn install skeleton layer
+FROM alpine:3.23.3 AS packages
+
+WORKDIR /app
+COPY package.json yarn.lock ./
+COPY .yarn ./.yarn
+COPY .yarnrc.yml ./
+COPY backstage.json ./
+
+COPY packages packages
+COPY plugins plugins
+
+RUN find packages \! -name "package.json" -mindepth 2 -maxdepth 2 -exec rm -rf {} \+
+
+# Stage 2 - Build layer
+FROM alpine:3.23.3 as build
+
+RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
+
+ENV NODE_VERSION="24.14.1-r0"
+
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
+    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
+    apk update && \
+    apk add --no-cache nodejs=$NODE_VERSION yarn \
+    cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev build-base
+
+WORKDIR /app
+RUN chown -R nonroot:nonroot /app
+
+RUN mkdir -p /home/nonroot/.yarn/berry && chown -R 65532:65532 /home/nonroot/.yarn/berry
+
+USER nonroot
+
+COPY --from=packages --chown=65532:65532  /app .
+COPY --from=packages --chown=65532:65532  /app/.yarn ./.yarn
+COPY --from=packages --chown=65532:65532  /app/.yarnrc.yml ./
+COPY --from=packages --chown=65532:65532  /app/backstage.json ./
+
+RUN --mount=type=cache,target=/home/nonroot/.yarn/berry/cache,sharing=locked,uid=65532,gid=65532 \
+    yarn install --immutable
+
+COPY --chown=65532:65532 . .
+
+# NOTE: `yarn test:all` is intentionally omitted for the demo image.
+RUN yarn tsc
+RUN yarn --cwd packages/backend build
+
+RUN mkdir packages/backend/dist/skeleton packages/backend/dist/bundle \
+    && tar xzf packages/backend/dist/skeleton.tar.gz -C packages/backend/dist/skeleton \
+    && tar xzf packages/backend/dist/bundle.tar.gz -C packages/backend/dist/bundle
+
+# Stage 3 - Node builder layer
+FROM alpine:3.23.3 as node-builder
+
+RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
+
+ENV NODE_VERSION="24.14.1-r0"
+ENV NODE_ENV=production
+
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
+    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
+    apk update && \
+    apk add --no-cache nodejs=$NODE_VERSION yarn \
+    cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev build-base
+
+WORKDIR /app
+RUN chown -R nonroot:nonroot /app
+
+RUN mkdir -p /home/nonroot/.yarn/berry && chown -R 65532:65532 /home/nonroot/.yarn/berry
+
+USER nonroot
+
+COPY --from=build --chown=65532:65532  /app/.yarn ./.yarn
+COPY --from=build --chown=65532:65532  /app/.yarnrc.yml ./
+COPY --from=build --chown=65532:65532  /app/backstage.json ./
+
+COPY --from=build --chown=65532:65532 /app/yarn.lock /app/package.json /app/packages/backend/dist/skeleton/ ./
+
+RUN --mount=type=cache,target=/home/nonroot/.yarn/berry/cache,sharing=locked,uid=65532,gid=65532 \
+    yarn workspaces focus --all --production && yarn cache clean --all
+
+# Stage 4 - Final layer
+FROM alpine:3.23.3
+
+RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
+
+ENV PYTHON_VERSION="~3.12"
+ENV NODE_VERSION="24.14.1-r0"
+ENV NODE_ENV=production
+ENV PYTHON=/usr/bin/python3
+
+RUN apk upgrade --no-cache
+
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
+    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
+    apk update && \
+    apk --no-cache add git \
+    nodejs=$NODE_VERSION \
+    python3=$PYTHON_VERSION py3-pip \
+    tini
+
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+RUN pip3 install --upgrade pip
+RUN pip3 install mkdocs-techdocs-core==1.6.0
+RUN pip3 install setuptools
+
+WORKDIR /app
+
+# Ship ONLY the demo config (no production/secrets-templated config in the image).
+COPY package.json app-config.demo-environment.yaml ./
+COPY LICENSE.TXT /opt/tibco/license/
+
+RUN chown -R 65532:65532 /app
+RUN chown -R 65532:65532 /tmp
+USER 65532:65532
+
+COPY --from=build --chown=65532:65532 /app/packages/backend/dist/bundle/ ./
+COPY --from=node-builder --chown=65532:65532 /app/node_modules ./node_modules
+
+# Required for the Scaffolder's isolated-vm usage.
+ENV NODE_OPTIONS="--no-node-snapshot"
+ENV GIT_PYTHON_REFRESH="quiet"
+
+ENTRYPOINT ["tini", "--"]
+
+CMD ["node", "packages/backend", "--config", "app-config.demo-environment.yaml"]

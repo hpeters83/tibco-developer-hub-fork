@@ -1,0 +1,37 @@
+# docker-compose.yml — runs the public TIBCO Developer Hub demo on a single host.
+#
+#   devhub : the demo image (built by .github/workflows/demo-image.yml), NOT
+#            published to the host network — only Caddy reaches it.
+#   caddy  : TLS termination + reverse proxy, automatic Let's Encrypt certs.
+#
+# Configure via the sibling `.env` file (copy from .env.example). Deploy/redeploy
+# with ./redeploy.sh. See README.md.
+
+services:
+  devhub:
+    image: ${DEVHUB_IMAGE}
+    restart: unless-stopped
+    environment:
+      # MUST include the /tibco/hub path segment, e.g. https://demo.example.com/tibco/hub
+      APP_BASE_URL: ${APP_BASE_URL}
+    expose:
+      - '7007' # internal to the compose network only — never published to the host
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - devhub
+
+volumes:
+  caddy_data:
+  caddy_config:

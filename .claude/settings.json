@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    }
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(grep -hoE '`[a-zA-Z0-9_/.-]+\\\\.\\(ts|sh|json|md|njk|bat\\)\\(:[0-9]+\\)?`' CLAUDE.md spec.md claude_plan.md CLAUDE_FDA_mapping_plan.md)",
+      "Bash(sed -E 's/^`//')",
+      "Bash(sed -E 's/`$//')",
+      "Bash(sed -E 's/:[0-9]+$//')",
+      "Bash(python3 -c 'import json; d=json.load\\(open\\('\\\\''__TRACKED_VAR__'\\\\''\\)\\); print\\('\\\\''engines:'\\\\'', d.get\\('\\\\''engines'\\\\''\\)\\);')",
+      "Bash(rm -f tsconfig.tsbuildinfo)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Read(//home/hpeters/tibco/.fecli/flogo-2263/flogo-vsc-extension/extension/media/flogo-runtime/**)",
+      "Read(//home/hpeters/tibco/.fecli/flogo-2263/flogo-vsc-extension/extension/media/flogo-runtime/wi-contrib/**)"
+    ],
+    "additionalDirectories": ["~/.nvm", "/tmp"]
+  }
+}
