@@ -5,7 +5,7 @@
 #   caddy  : TLS termination + reverse proxy, automatic Let's Encrypt certs.
 #
 # Configure via the sibling `.env` file (copy from .env.example). Deploy/redeploy
-# with ./redeploy.sh. See README.md.
+# with ./redeploy.sh. Host runbook: deploy/demo/LightSail_README.md (gitignored).
 
 services:
   devhub:

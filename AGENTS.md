@@ -32,6 +32,7 @@ Backstage loads app-config files in order; later files override earlier ones.
 
 - `app-config.yaml` — base, committed
 - `app-config.production.yaml` — used in the docker image (`CMD` passes `--config app-config.production.yaml`)
+- `app-config.demo-environment.yaml` — standalone, no-secrets config for the public demo (guest-only auth, in-memory SQLite, no tokens); shipped in the demo image and run with `--config app-config.demo-environment.yaml`. See the `create-demo-environment` workflow
 - `app-config.local.yaml` — gitignored; copy from `app-config.template-local.yaml` for local dev. **Required** for `yarn start` to pick up local secrets / DB connection
 - `.env.yarn` — gitignored env file consumed by `yarn start`; copy from `.env.yarn-local`. Common vars: `POSTGRES_*`, `GITHUB_TOKEN`, `DOC_URL`, `AUTH_*_CLIENT_ID/SECRET`
 
@@ -149,3 +150,16 @@ Two-phase end-to-end test for an import flow template.
 2. POST to `http://127.0.0.1:7007/api/scaffolder/v2/tasks` with real parameter values
 3. Poll `GET /api/scaffolder/v2/tasks/{id}` until status is `completed` or `failed`
 4. Query `GET /api/catalog/entities?filter=kind=Component,metadata.name=<name>` to confirm the imported entities were registered in the catalog
+
+### create-demo-environment
+
+Build and deploy a **public, unauthenticated** demo (prospects/pre-sales browse catalog, integration topology, marketplace — no login, zero secrets) on one small always-on host.
+
+The safety guarantee lives entirely in `app-config.demo-environment.yaml`: **guest auth only** (no `tibco-control-plane`), **in-memory SQLite**, **no `integrations.github.token`**, catalog from the public repo. The image ships only this config — never `app-config.production.yaml`. Credential-needing actions (template publish, marketplace install) fail by design.
+
+1. The image is built in **CI** (`Dockerfile.demo` → `.github/workflows/demo-image.yml` → GHCR) — never on the host; make the GHCR package public after the first push
+2. Deploy on the host with `deploy/demo/docker-compose.yml` (`devhub` container + `caddy` for auto-HTTPS) via `deploy/demo/redeploy.sh`
+3. **Serve under `/tibco/hub`**: `APP_BASE_URL` must end with `/tibco/hub` (the build's publicPath, the marketplace TechDocs links, and API `servers` URLs all assume it). The backend serves at root, so Caddy strips the prefix (`handle_path /tibco/hub*`)
+4. Point a DNS A record at the host's static IP; only ports 80/443 are public (never 7007)
+
+Generic artifacts under `deploy/demo/` are committed; the host-specific runbook (`deploy/demo/LightSail_README.md`) and the host `.env` are gitignored — keep the real domain/IP/secrets out of committed files.
