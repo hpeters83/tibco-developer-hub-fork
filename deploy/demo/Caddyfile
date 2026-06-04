@@ -7,8 +7,19 @@
 {$DEMO_DOMAIN} {
 	encode gzip
 
-	# The frontend bundle is served under /tibco/hub; send the bare root there.
-	redir / /tibco/hub 308
+	# The app is served at root (APP_BASE_URL is the bare domain): app-backend
+	# rewrites the HTML <script>/<link> tags to /static/... at runtime.
+	#
+	# BUT font URLs inside the extracted CSS are frozen at BUILD time with the
+	# build's publicPath (/tibco/hub) and are NOT rewritten at runtime. The files
+	# actually live at /static/..., so remap the stale /tibco/hub/static/* paths
+	# back to /static/* (covers all build-baked CSS asset URLs, not just fonts).
+	handle /tibco/hub/static/* {
+		uri replace /tibco/hub/static/ /static/
+		reverse_proxy devhub:7007
+	}
 
-	reverse_proxy devhub:7007
+	handle {
+		reverse_proxy devhub:7007
+	}
 }

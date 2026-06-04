@@ -82,7 +82,7 @@ git clone https://github.com/<owner>/<repo>.git
 cd <repo>/deploy/demo
 
 cp .env.example .env
-# Edit .env: DEVHUB_IMAGE, DEMO_DOMAIN, APP_BASE_URL (APP_BASE_URL must end with /tibco/hub)
+# Edit .env: DEVHUB_IMAGE, DEMO_DOMAIN, and APP_BASE_URL (the bare https://<domain>, no path)
 
 # Only if the GHCR package is PRIVATE:
 # echo <a-PAT-with-read:packages> | docker login ghcr.io -u <user> --password-stdin
@@ -96,11 +96,12 @@ Caddy will obtain a TLS cert on first start (needs DNS resolving + 80/443 open).
 ## Verify
 
 ```bash
-curl -I https://demo.<domain>/tibco/hub        # → 200, valid TLS
-curl -I https://demo.<domain>/                 # → 308 redirect to /tibco/hub
+curl -I https://demo.<domain>/                                   # → 200, valid TLS
+curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' \
+  https://demo.<domain>/static/                                  # assets serve at root
 ```
 
-In a browser, open `https://demo.<domain>/tibco/hub` and confirm:
+In a browser, open `https://demo.<domain>/` and confirm:
 - it loads **as guest with no sign-in prompt** (no TIBCO Control Plane login),
 - the catalog, **integration topology**, and **marketplace** populate,
 - a create-template "publish"/marketplace "install" fails gracefully (no token — expected).

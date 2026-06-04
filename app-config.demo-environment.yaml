@@ -12,9 +12,10 @@
 #   * catalog/marketplace/topology data is sourced from the public repo over plain HTTPS
 # Do NOT add any token/secret/clientSecret/password to this file.
 #
-# The only runtime input is APP_BASE_URL, which MUST include the /tibco/hub path
-# segment (the frontend bundle's publicPath is baked to /tibco/hub at build time),
-# e.g.  APP_BASE_URL=https://demo.example.com/tibco/hub
+# The only runtime input is APP_BASE_URL — the bare public origin, no path, e.g.
+#   APP_BASE_URL=https://demo.example.com
+# app-backend serves the app, /static and /api all at root from this value, so the
+# reverse proxy in front can be a plain pass-through.
 define: &docUrl https://docs.tibco.com/go/platform-cp/1.17.0/doc/html#cshid=developer_hub_overview
 app:
   title: TIBCO® Developer Hub
