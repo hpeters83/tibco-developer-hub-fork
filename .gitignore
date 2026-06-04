@@ -73,3 +73,4 @@ environment.sh
 # Local environment variables
 /.env.yarn
 /HugoNotes.txt
+/deploy/demo/LightSail_README.md
