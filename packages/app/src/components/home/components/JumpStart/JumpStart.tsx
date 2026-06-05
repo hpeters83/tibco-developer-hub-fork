@@ -68,17 +68,6 @@ export const JumpStart = () => {
                 </button>
               </Link>
             </Grid>
-            <Grid item>
-              <Link to="/catalog-import">
-                <button
-                  type="button"
-                  className="pl-button pl-button--no-border tpdh-js-btn"
-                  id="tpdh-home-btn-register-existing"
-                >
-                  Register existing component
-                </button>
-              </Link>
-            </Grid>
           </Grid>
         </Grid>
       </Grid>

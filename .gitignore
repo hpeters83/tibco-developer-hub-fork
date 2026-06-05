@@ -74,3 +74,5 @@ environment.sh
 /.env.yarn
 /HugoNotes.txt
 /deploy/demo/LightSail_README.md
+/.claude/skills/create-demo-environment/SKILL.md
+/app-config.demo-local.yaml

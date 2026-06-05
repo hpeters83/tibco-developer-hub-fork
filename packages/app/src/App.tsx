@@ -3,7 +3,7 @@
  */
 
 import { Route } from 'react-router';
-import { apiDocsPlugin, ApiExplorerPage } from '@backstage/plugin-api-docs';
+import { ApiExplorerPage } from '@backstage/plugin-api-docs';
 import {
   CatalogEntityPage,
   CatalogIndexPage,
@@ -37,8 +37,6 @@ import {
   FlatRoutes,
 } from '@backstage/core-app-api';
 import { CatalogGraphPage } from '@backstage/plugin-catalog-graph';
-import { RequirePermission } from '@backstage/plugin-permission-react';
-import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 
 import { HomepageCompositionRoot } from '@backstage/plugin-home';
 import { HomePage } from './components/home/HomePage';
@@ -54,8 +52,6 @@ import { SignInPage } from '@backstage/core-components';
 
 import { tibcoThemeLight } from './themes/tibcoThemeLight';
 import { settingsPage } from './components/settings/settings';
-import { CatalogImportPage } from './components/catalog-import/CatalogImportPage';
-import { catalogImportPlugin } from '@backstage/plugin-catalog-import';
 import { Button } from '@material-ui/core';
 import { UnifiedThemeProvider } from '@backstage/theme';
 import { TemplateListPage } from '@internal/backstage-plugin-import-flow';
@@ -153,11 +149,7 @@ const app = createApp({
       viewTechDoc: techdocsPlugin.routes.docRoot,
       createFromTemplate: scaffolderPlugin.routes.selectedTemplate,
     });
-    bind(apiDocsPlugin.externalRoutes, {
-      registerApi: catalogImportPlugin.routes.importPage,
-    });
     bind(scaffolderPlugin.externalRoutes, {
-      registerComponent: catalogImportPlugin.routes.importPage,
       viewTechDoc: techdocsPlugin.routes.docRoot,
     });
     bind(orgPlugin.externalRoutes, {
@@ -303,14 +295,6 @@ export const routes = (
     <Route path="/import-flow" element={<CustomImportFlowPage />} />
     <Route path="/create" element={<CustomScaffolderPage />} />
     <Route path="/api-docs" element={<ApiExplorerPage />} />
-    <Route
-      path="/catalog-import"
-      element={
-        <RequirePermission permission={catalogEntityCreatePermission}>
-          <CatalogImportPage />
-        </RequirePermission>
-      }
-    />
     <Route path="/search" element={<SearchPage />}>
       {searchPage}
     </Route>

@@ -477,9 +477,6 @@ describe('Should render all the routes correctly', () => {
       'href',
       '/create',
     );
-    expect(
-      getByText('Register existing component').closest('a'),
-    ).toHaveAttribute('href', '/catalog-import');
     expect(getByText('Systems')).toBeInTheDocument();
     expect(getByText('Components')).toBeInTheDocument();
     expect(getByText('Documents')).toBeInTheDocument();
@@ -573,9 +570,6 @@ describe('Should render all the routes correctly', () => {
         'Develop new software components using standard templates in your organization',
       ),
     ).toBeInTheDocument();
-    expect(
-      getByText('Register Existing Component').closest('a'),
-    ).toHaveAttribute('href', '/catalog-import');
     await waitFor(() => {
       expect(getByText('Group1')).toBeInTheDocument();
       expect(getByText('Group2')).toBeInTheDocument();
@@ -624,9 +618,6 @@ describe('Should render all the routes correctly', () => {
     expect(
       getByText('Import new software components using import flows'),
     ).toBeInTheDocument();
-    expect(
-      getByText('Register Existing Import Flow').closest('a'),
-    ).toHaveAttribute('href', '/catalog-import');
     await waitFor(() => {
       expect(getByText('Group1')).toBeInTheDocument();
       expect(getByText('Group2')).toBeInTheDocument();
