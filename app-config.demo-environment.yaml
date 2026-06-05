@@ -83,6 +83,15 @@ catalog:
       rules:
         - allow:
             [Group, Template, System, Domain, Location, Component, API, Resource]
+    # Demo-only promotional material, shipped in the image (see Dockerfile.demo).
+    # Rendered via the "Learn More..." sidebar item at /docs/default/system/learn-more.
+    # NOTE: a `file:` target is resolved against the backend process cwd. In the image
+    # that is /app (WORKDIR), so this `./` path is correct there. For local `yarn start-demo`
+    # the cwd differs, so app-config.demo-local.yaml overrides catalog.locations.
+    - type: file
+      target: ./promotional-material/learn-more/catalog-info.yaml
+      rules:
+        - allow: [System, Group, Domain, Location]
   rules:
     - allow:
         [Group, Template, System, Domain, Location, Component, API, Resource]

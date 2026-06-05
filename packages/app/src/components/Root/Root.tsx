@@ -540,6 +540,16 @@ const SidebarCustom = ({
         <SidebarItem
           className={cpClicked ? classes.itemNotSelected : ''}
           onClick={() => setCpClicked(false)}
+          icon={() => <TibcoIcon iconName="pl-icon-info" />}
+          to="/docs/default/system/learn-more"
+          text="Learn More..."
+        />
+      </SidebarGroup>
+      <SidebarDivider className={classes.divider} />
+      <SidebarGroup>
+        <SidebarItem
+          className={cpClicked ? classes.itemNotSelected : ''}
+          onClick={() => setCpClicked(false)}
           icon={() => <TibcoIcon iconName="pl-icon-settings" />}
           to="/settings"
           text="Settings"

@@ -1,0 +1,6 @@
+site_name: Learn More
+site_description: TIBCO® Developer Hub — Learn More
+nav:
+  - Introduction: index.md
+plugins:
+  - techdocs-core

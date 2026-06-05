@@ -68,6 +68,17 @@ export const JumpStart = () => {
                 </button>
               </Link>
             </Grid>
+            <Grid item>
+              <Link to="/docs/default/system/learn-more">
+                <button
+                  type="button"
+                  className="pl-button pl-button--no-border tpdh-js-btn"
+                  id="tpdh-home-btn-learn-more"
+                >
+                  Learn more
+                </button>
+              </Link>
+            </Grid>
           </Grid>
         </Grid>
       </Grid>

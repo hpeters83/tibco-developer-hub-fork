@@ -125,6 +125,9 @@ WORKDIR /app
 
 # Ship ONLY the demo config (no production/secrets-templated config in the image).
 COPY package.json app-config.demo-environment.yaml ./
+# Promotional material rendered as TechDocs via the "Learn More..." sidebar item.
+# Built on demand by the local TechDocs generator (mkdocs-techdocs-core, installed above).
+COPY promotional-material ./promotional-material
 COPY LICENSE.TXT /opt/tibco/license/
 
 RUN chown -R 65532:65532 /app

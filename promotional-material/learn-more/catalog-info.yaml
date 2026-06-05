@@ -1,0 +1,31 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: learn-more-doc
+  description: Promotional material for the TIBCO® Developer Hub demo
+spec:
+  type: organization
+  profile:
+    displayName: Learn More
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: learn-more-doc
+  description: A group of promotional documents
+spec:
+  owner: learn-more-doc
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: learn-more
+  description: 'Learn more about the TIBCO® Developer Hub'
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - documentation
+spec:
+  owner: learn-more-doc
+  domain: learn-more-doc
