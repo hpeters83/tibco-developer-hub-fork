@@ -22,8 +22,12 @@ app:
   title: TIBCO® Developer Hub
   # Must equal backend.baseUrl when using the `app-backend` plugin (single origin).
   baseUrl: ${APP_BASE_URL}
-  # Hide build-version footer in the public demo.
+  # Hide the homepage build-version banner in the public demo.
   showBuildVersion: false
+  # Show the deployed version in the sidebar footer (bottom-left). Read by
+  # Root.tsx → renders "Version : <value>". Unlike showBuildVersion (homepage),
+  # this is gated only by the key being set.
+  developerHubVersion: '1.17.0'
   support:
     url: https://support.tibco.com/s/
     items:
