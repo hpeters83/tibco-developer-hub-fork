@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# DevHub Portable launcher (macOS / Linux).
+# Starts the self-contained TIBCO Developer Hub (frontend + backend in one process).
+#
+#   ./devhub                         # start on http://localhost:7007
+#   ./devhub --port 8088             # start on a custom port
+#   ./devhub --config ./my.yaml      # layer an extra app-config (repeatable)
+#   ./devhub --port 8088 --config ./catalog.yaml --config ./extra.yaml
+#
+set -euo pipefail
+
+# Resolve the bundle directory (this script lives at the bundle root), following symlinks.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+HERE="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+PORT="${DEVHUB_PORT:-7007}"
+EXTRA_CONFIGS=()
+
+show_help() {
+  sed -n '3,12p' "$SOURCE" | sed 's/^# \{0,1\}//'
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --port)     PORT="${2:?--port needs a value}"; shift 2 ;;
+    --port=*)   PORT="${1#*=}"; shift ;;
+    --config)   EXTRA_CONFIGS+=("--config" "${2:?--config needs a path}"); shift 2 ;;
+    --config=*) EXTRA_CONFIGS+=("--config" "${1#*=}"); shift ;;
+    -h|--help)  show_help; exit 0 ;;
+    *) echo "devhub: unknown argument '$1' (try --help)" >&2; exit 1 ;;
+  esac
+done
+
+# --- runtime environment -----------------------------------------------------
+export DEVHUB_PORT="$PORT"
+export DEVHUB_DATA_DIR="${DEVHUB_DATA_DIR:-$HERE/data}"
+# Required for the Scaffolder's isolated-vm to work.
+export NODE_OPTIONS="${NODE_OPTIONS:---no-node-snapshot}"
+export NODE_ENV="${NODE_ENV:-production}"
+export GIT_PYTHON_REFRESH="${GIT_PYTHON_REFRESH:-quiet}"
+
+# Safe defaults for every env var the config may reference, so substitution never fails.
+export GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+export DOC_URL="${DOC_URL:-https://docs.tibco.com/go/platform-cp/latest/doc/html#cshid=developer_hub_overview}"
+
+mkdir -p "$DEVHUB_DATA_DIR"
+
+NODE_BIN="$HERE/node/bin/node"
+if [[ ! -x "$NODE_BIN" ]]; then
+  echo "devhub: bundled Node runtime not found at $NODE_BIN" >&2
+  exit 1
+fi
+
+echo "Starting TIBCO Developer Hub (portable)"
+echo "  URL:  http://localhost:${PORT}"
+echo "  Data: ${DEVHUB_DATA_DIR}"
+echo
+
+exec "$NODE_BIN" "$HERE/packages/backend" \
+  --config "$HERE/app-config.portable.yaml" \
+  ${EXTRA_CONFIGS[@]+"${EXTRA_CONFIGS[@]}"}
