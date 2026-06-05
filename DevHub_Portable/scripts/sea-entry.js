@@ -61,6 +61,11 @@ process.env.GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 process.env.DOC_URL =
   process.env.DOC_URL ||
   'https://docs.tibco.com/go/platform-cp/latest/doc/html#cshid=developer_hub_overview';
+// Feed a provided token into the github integration so the example catalog loads
+// without anonymous rate limits.
+if (process.env.GITHUB_TOKEN) {
+  process.env.APP_CONFIG_integrations_github_0_token = process.env.GITHUB_TOKEN;
+}
 
 fs.mkdirSync(process.env.DEVHUB_DATA_DIR, { recursive: true });
 

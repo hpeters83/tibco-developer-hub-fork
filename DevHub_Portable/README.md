@@ -12,8 +12,9 @@ production dependencies (including the compiled native modules), and a launcher.
 ## Quick start — one command
 
 The bootstrap script auto-detects your OS/arch, downloads the matching bundle from the
-GitHub release (into `~/.devhub-portable`), and starts the hub. Re-running just
-relaunches the cached bundle, so it doubles as the "run" command.
+GitHub release, extracts it into the **current folder** (`./devhub-<os>-<arch>/`), and
+starts the hub. Re-running just relaunches the extracted bundle, so it doubles as the
+"run" command. (Override the location with `DEVHUB_DIR`.)
 
 ```bash
 # macOS / Linux — starts on http://localhost:7007

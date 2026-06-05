@@ -49,6 +49,12 @@ export GIT_PYTHON_REFRESH="${GIT_PYTHON_REFRESH:-quiet}"
 export GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 export DOC_URL="${DOC_URL:-https://docs.tibco.com/go/platform-cp/latest/doc/html#cshid=developer_hub_overview}"
 
+# If a GitHub token is provided, feed it into the github integration (config defines
+# it anonymously) so the example catalog loads without anonymous rate limits.
+if [[ -n "${GITHUB_TOKEN}" ]]; then
+  export APP_CONFIG_integrations_github_0_token="${GITHUB_TOKEN}"
+fi
+
 mkdir -p "$DEVHUB_DATA_DIR"
 
 NODE_BIN="$HERE/node/bin/node"

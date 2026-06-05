@@ -43,6 +43,10 @@ REM Safe defaults so config env-substitution never fails.
 if not defined GITHUB_TOKEN set "GITHUB_TOKEN="
 if not defined DOC_URL set "DOC_URL=https://docs.tibco.com/go/platform-cp/latest/doc/html#cshid=developer_hub_overview"
 
+REM If a GitHub token is provided, feed it into the github integration so the example
+REM catalog loads without anonymous rate limits.
+if not "%GITHUB_TOKEN%"=="" set "APP_CONFIG_integrations_github_0_token=%GITHUB_TOKEN%"
+
 if not exist "%DEVHUB_DATA_DIR%" mkdir "%DEVHUB_DATA_DIR%"
 
 set "NODE_BIN=%HERE%\node\node.exe"

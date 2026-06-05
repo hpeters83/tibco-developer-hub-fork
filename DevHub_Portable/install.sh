@@ -2,9 +2,10 @@
 #
 # DevHub Portable bootstrap (macOS / Linux).
 #
-# Downloads the right portable bundle for this machine, extracts it (once, into a
-# cache dir), and starts the TIBCO Developer Hub. Re-running just relaunches the
-# already-extracted bundle, so it doubles as the "run" script.
+# Downloads the right portable bundle for this machine, extracts it (once, into the
+# current folder as ./devhub-<os>-<arch>/), and starts the TIBCO Developer Hub.
+# Re-running just relaunches the already-extracted bundle, so it doubles as the
+# "run" script.
 #
 # One-liner:
 #   curl -fsSL <raw-url>/DevHub_Portable/install.sh | bash
@@ -18,14 +19,14 @@
 #   DEVHUB_VERSION  release tag to install, or "latest" (default: latest)
 #   DEVHUB_URL      full URL to a devhub-<os>-<arch>.zip (overrides REPO/VERSION;
 #                   may be a file:// URL for local testing)
-#   DEVHUB_DIR      where bundles are cached (default: $HOME/.devhub-portable)
+#   DEVHUB_DIR      parent folder to extract into (default: current directory)
 #   DEVHUB_FORCE    set to 1 to re-download/re-extract even if already present
 #
 set -euo pipefail
 
 REPO="${DEVHUB_REPO:-hpeters83/tibco-developer-hub-fork}"
 VERSION="${DEVHUB_VERSION:-latest}"
-INSTALL_ROOT="${DEVHUB_DIR:-$HOME/.devhub-portable}"
+INSTALL_ROOT="${DEVHUB_DIR:-$PWD}"
 
 err() { echo "devhub-install: $*" >&2; }
 die() { err "$*"; exit 1; }
@@ -58,7 +59,7 @@ if [ -z "${DEVHUB_URL:-}" ]; then
   DEVHUB_URL="https://github.com/$REPO/releases/download/$VERSION/devhub-$TARGET.zip"
 fi
 
-DEST="$INSTALL_ROOT/${VERSION}"
+DEST="$INSTALL_ROOT"
 BUNDLE="$DEST/devhub-$TARGET"
 
 # --- download + extract (once) -----------------------------------------------

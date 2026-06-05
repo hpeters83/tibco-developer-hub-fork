@@ -63,12 +63,13 @@ backend:
       - catalog
       - scaffolder
 
-# No GitHub integration by default — Backstage rejects an empty token, and a fresh
-# portable start needs none. To enable GitHub features, pass your own --config file:
-#   integrations:
-#     github:
-#       - host: github.com
-#         token: <your-token>
+integrations:
+  github:
+    # Anonymous (no token) GitHub reader — needed so the example Location below and
+    # its relative sub-targets can be read from github.com. Anonymous requests are
+    # rate-limited (60/hour); for heavier use pass a token via your own --config:
+    #   integrations: { github: [ { host: github.com, token: <your-token> } ] }
+    - host: github.com
 
 techdocs:
   builder: 'local'
@@ -101,9 +102,12 @@ scaffolder:
 catalog:
   rules:
     - allow:
-        [Group, Template, System, Domain, Location, Component, API, Resource]
-  # User-supplied --config files can add entries here to load initial YAMLs.
-  locations: []
+        [User, Group, Template, System, Domain, Location, Component, API, Resource]
+  # Loaded on first start so the catalog isn't empty. Add more (or override) via your
+  # own --config file. Uses the anonymous GitHub reader configured above.
+  locations:
+    - type: url
+      target: https://github.com/TIBCOSoftware/tibco-developer-hub/blob/main/tibco-examples/tibco-examples.yaml
 
 kubernetes:
 

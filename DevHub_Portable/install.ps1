@@ -3,8 +3,9 @@
   DevHub Portable bootstrap (Windows).
 
 .DESCRIPTION
-  Downloads the Windows portable bundle, extracts it (once, into a cache dir) and
-  starts the TIBCO Developer Hub. Re-running just relaunches the cached bundle.
+  Downloads the Windows portable bundle, extracts it (once, into the current folder
+  as .\devhub-win32-x64\) and starts the TIBCO Developer Hub. Re-running just
+  relaunches the extracted bundle.
 
   One-liner (downloads then runs):
     powershell -ExecutionPolicy Bypass -Command "irm <raw-url>/DevHub_Portable/install.ps1 -OutFile $env:TEMP\devhub-install.ps1; & $env:TEMP\devhub-install.ps1 -Port 8088"
@@ -30,7 +31,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $Target = 'win32-x64'
-$InstallRoot = if ($env:DEVHUB_DIR) { $env:DEVHUB_DIR } else { Join-Path $env:USERPROFILE '.devhub-portable' }
+$InstallRoot = if ($env:DEVHUB_DIR) { $env:DEVHUB_DIR } else { (Get-Location).Path }
 
 if (-not $Url) {
   if ($Version -eq 'latest') {
@@ -42,7 +43,7 @@ if (-not $Url) {
   $Url = "https://github.com/$Repo/releases/download/$Version/devhub-$Target.zip"
 }
 
-$Dest = Join-Path $InstallRoot $Version
+$Dest = $InstallRoot
 $Bundle = Join-Path $Dest "devhub-$Target"
 $Launcher = Join-Path $Bundle 'devhub.cmd'
 
