@@ -73,3 +73,5 @@ environment.sh
 # Local environment variables
 /.env.yarn
 /TestPortable/
+/HugoNotesNew.txt
+/.playwright-mcp/
