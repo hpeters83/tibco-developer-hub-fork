@@ -1,0 +1,13 @@
+- generic [ref=e2]:
+  - region "0 notifications."
+  - main [ref=e3]:
+    - heading "TIBCO® Developer Hub" [level=1] [ref=e6]
+    - article [ref=e7]:
+      - list [ref=e8]:
+        - listitem [ref=e9]:
+          - generic [ref=e10]:
+            - generic [ref=e13]: Guest
+            - separator [ref=e14]
+            - paragraph [ref=e16]: Enter as a Guest User. You will not have a verified identity, meaning some features might be unavailable.
+            - button "Enter" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: Enter

@@ -1,0 +1,13 @@
+
+From this project (the TIBCO Developer Hub), I want to create a DevHub portable. So in essence a single executable that host both the frontend and the backend.
+So I can start up the TIBCO developer Hub locally without too much hassle. As a commandline parameter I want to be able to give a local app-config.yaml so I can point to some initial yamls I want to load. Can we also make a parameter on which the devhub is hosted (default 3000/7000) like normally.
+What would the best approach be to do this ?
+Let me know if you have clarification questions ?
+Can you put the output in a DevHub_Portable folder and create executables for the various OS's and Architectures ?
+
+
+git tag -a portable-v0.9.0 -m "DevHub Portable v0.9.0" && git push origin portable-v0.9.0
+
+
+
+curl -fsSL https://raw.githubusercontent.com/hpeters83/tibco-developer-hub-fork/dev_hub_portable_poc/DevHub_Portable/install.sh | bash

@@ -25,10 +25,14 @@ curl -fsSL https://raw.githubusercontent.com/hpeters83/tibco-developer-hub-fork/
 ```
 
 ```powershell
-# Windows (PowerShell) — download then run
-irm https://raw.githubusercontent.com/hpeters83/tibco-developer-hub-fork/dev_hub_portable_poc/DevHub_Portable/install.ps1 -OutFile $env:TEMP\devhub-install.ps1
-& $env:TEMP\devhub-install.ps1 -Port 8088 -Config .\my.yaml
+# Windows (PowerShell) — download, then run with the execution policy bypassed
+# (downloaded .ps1 files are blocked by default). Run the two lines as-is; quote the
+# path and DO NOT join them with `&` (that's the call operator, not a separator).
+irm https://raw.githubusercontent.com/hpeters83/tibco-developer-hub-fork/dev_hub_portable_poc/DevHub_Portable/install.ps1 -OutFile "$env:TEMP\devhub-install.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\devhub-install.ps1" -Port 8088
 ```
+
+Add `-Config .\my.yaml` to the second line only if that file exists.
 
 Pin a specific release or point at a custom asset with env vars (see the top of
 `install.sh`): `DEVHUB_VERSION=portable-v1.0.0`, `DEVHUB_REPO=owner/repo`,

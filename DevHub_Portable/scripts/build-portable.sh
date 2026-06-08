@@ -102,6 +102,21 @@ for m in isolated-vm better-sqlite3; do
   [[ -d "$BUNDLE/node_modules/$m" ]] || { echo "WARNING: $m not found in node_modules" >&2; }
 done
 
+# The in-repo workspace packages (app, @internal/*) are symlinked into node_modules.
+# Replace those links with real copies sourced from the bundle's own plugins/packages
+# so the bundle is fully self-contained — relative symlinks survive macOS/Linux but
+# Windows junctions are absolute and break once the bundle is moved/zipped/extracted.
+echo "==> Materializing workspace packages into node_modules (self-contained)"
+for d in "$BUNDLE"/plugins/* "$BUNDLE"/packages/*; do
+  [[ -f "$d/package.json" ]] || continue
+  pkg_name="$(node -p "require('$d/package.json').name" 2>/dev/null || true)"
+  [[ -n "$pkg_name" && "$pkg_name" != "undefined" ]] || continue
+  dest="$BUNDLE/node_modules/$pkg_name"
+  rm -rf "$dest"
+  mkdir -p "$(dirname "$dest")"
+  cp -R "$d" "$dest"
+done
+
 # --- 4. embed the Node runtime ----------------------------------------------
 echo "==> Downloading Node $NODE_VERSION for $TARGET"
 NODE_PKG="node-$NODE_VERSION-$OS-$ARCH"

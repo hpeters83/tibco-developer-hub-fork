@@ -93,6 +93,26 @@ foreach ($m in @('isolated-vm','better-sqlite3')) {
   if (-not (Test-Path (Join-Path $Bundle "node_modules\$m"))) { Write-Warning "$m not found in node_modules" }
 }
 
+# The in-repo workspace packages (app, @internal/*) are linked into node_modules. On
+# Windows yarn creates absolute junctions that break once the bundle is moved/zipped.
+# Replace them with real copies sourced from the bundle's own plugins/packages so the
+# bundle is fully self-contained.
+Write-Host '==> Materializing workspace packages into node_modules (self-contained)'
+$wsDirs = @()
+$wsDirs += Get-ChildItem -Directory (Join-Path $Bundle 'plugins')  -ErrorAction SilentlyContinue
+$wsDirs += Get-ChildItem -Directory (Join-Path $Bundle 'packages') -ErrorAction SilentlyContinue
+foreach ($d in $wsDirs) {
+  $pj = Join-Path $d.FullName 'package.json'
+  if (-not (Test-Path $pj)) { continue }
+  $pkgName = (Get-Content $pj -Raw | ConvertFrom-Json).name
+  if (-not $pkgName) { continue }
+  $dest = Join-Path (Join-Path $Bundle 'node_modules') ($pkgName -replace '/', '\')
+  if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+  $parent = Split-Path $dest
+  if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Force $parent | Out-Null }
+  Copy-Item -Recurse -Force $d.FullName $dest
+}
+
 # --- 4. embed the Node runtime ----------------------------------------------
 Write-Host "==> Downloading Node $NodeVersion for $Target"
 # nodejs.org uses the "win" token (not "win32") in its archive names.
