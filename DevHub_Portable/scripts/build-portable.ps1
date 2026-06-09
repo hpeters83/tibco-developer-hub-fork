@@ -153,7 +153,16 @@ if (-not $NoZip) {
   Write-Host '==> Zipping'
   $Zip = Join-Path $Out "devhub-$Target.zip"
   if (Test-Path $Zip) { Remove-Item -Force $Zip }
-  Compress-Archive -Path $Bundle -DestinationPath $Zip
+  # Build the zip with bsdtar, not Compress-Archive: Compress-Archive is slow and shares
+  # the same Windows MAX_PATH fragility that can silently drop deep node_modules entries,
+  # and the resulting archive is what install.ps1 must extract.
+  Push-Location $Out
+  try {
+    & tar.exe -c -f $Zip --format zip "devhub-$Target"
+    if ($LASTEXITCODE -ne 0) { throw "tar zip creation failed (exit $LASTEXITCODE)" }
+  } finally {
+    Pop-Location
+  }
   Write-Host "==> Wrote $Zip"
 }
 
