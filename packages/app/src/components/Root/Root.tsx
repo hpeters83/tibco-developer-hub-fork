@@ -33,7 +33,7 @@ import TopologyIcon from '../../icons/topology.svg';
 import ImportFlowIcon from '../../icons/importflow.svg';
 import DocumentsIcon from '../../icons/documents.svg';
 import SelfServiceIcon from '../../icons/selfservice.svg';
-import RegisterIcon from '../../icons/register.svg';
+// import RegisterIcon from '../../icons/register.svg';
 
 const SIDE_NAV_WIDTH_OPEN = 264;
 const SIDE_NAV_WIDTH_CLOSE = 72;
@@ -550,15 +550,15 @@ const SidebarCustom = ({
           to="import-flow"
           text="Import..."
         />
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          onClick={() => setCpClicked(false)}
-          icon={() => (
-            <img src={RegisterIcon} height={24} width={24} alt="logo" />
-          )}
-          to="catalog-import"
-          text="Register..."
-        />
+        {/*<SidebarItem*/}
+        {/*  className={cpClicked ? classes.itemNotSelected : ''}*/}
+        {/*  onClick={() => setCpClicked(false)}*/}
+        {/*  icon={() => (*/}
+        {/*    <img src={RegisterIcon} height={24} width={24} alt="logo" />*/}
+        {/*  )}*/}
+        {/*  to="catalog-import"*/}
+        {/*  text="Register..."*/}
+        {/*/>*/}
         {/* End global nav */}
       </SidebarGroup>
       <SidebarDivider className={classes.divider} />
