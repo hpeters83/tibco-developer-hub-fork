@@ -27,7 +27,7 @@ app:
   # Show the deployed version in the sidebar footer (bottom-left). Read by
   # Root.tsx → renders "Version : <value>". Unlike showBuildVersion (homepage),
   # this is gated only by the key being set.
-  developerHubVersion: '1.17.0'
+  developerHubVersion: '1.18.0'
   support:
     url: https://support.tibco.com/s/
     items:
