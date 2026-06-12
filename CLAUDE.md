@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 Project documentation shared with all AI agents lives in `AGENTS.md` and is imported below.
 
+NEVER READ THE ./ssh-key folder !!! 
+
 @AGENTS.md
 
 ## Claude Code-specific

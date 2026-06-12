@@ -77,3 +77,5 @@ environment.sh
 /.claude/skills/create-demo-environment/SKILL.md
 /app-config.demo-local.yaml
 /demo-environment-announcement.md
+/VideoResources/
+/ssh-key/

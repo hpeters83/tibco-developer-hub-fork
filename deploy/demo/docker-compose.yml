@@ -27,6 +27,10 @@ services:
       DEMO_DOMAIN: ${DEMO_DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Host-served static media (e.g. the Learn More video). The ./media dir is
+      # created on the host and populated via scp — it is gitignored and never
+      # baked into an image. Served by Caddy at /tibco/hub/media/*.
+      - ./media:/srv/media:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

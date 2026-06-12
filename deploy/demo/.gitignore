@@ -1,2 +1,6 @@
 # Never commit the host's filled-in env file.
 .env
+
+# Host-served static media (e.g. the Learn More video) — scp'd to the host,
+# too large for git and never baked into an image.
+media/

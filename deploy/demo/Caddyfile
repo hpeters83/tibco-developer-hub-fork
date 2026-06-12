@@ -20,6 +20,19 @@
 	#   /tibco/hub/create         -> /create  (SPA route; router basename=/tibco/hub)
 	redir / /tibco/hub/ 308
 
+	# Large static media (e.g. the Learn More marketing video) is served straight
+	# from the host filesystem, NOT from git or the Docker image. Files live in
+	# ./media on the host (bind-mounted into this container at /srv/media, see
+	# docker-compose.yml) and are scp'd up out-of-band — see LightSail_README.md.
+	# Caddy auto-sorts handle blocks by path specificity, so this more specific
+	# /tibco/hub/media/* route is matched before the catch-all proxy below.
+	# handle_path strips the prefix: /tibco/hub/media/foo.mp4 -> /srv/media/foo.mp4.
+	# file_server supports HTTP range requests, so the browser can seek the video.
+	handle_path /tibco/hub/media/* {
+		root * /srv/media
+		file_server
+	}
+
 	handle_path /tibco/hub* {
 		reverse_proxy devhub:7007
 	}

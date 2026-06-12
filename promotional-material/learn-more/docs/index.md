@@ -8,6 +8,18 @@
 
 # The TIBCO® Developer Hub
 
+<!--
+  The video is served by Caddy straight from the demo host (./media -> /srv/media),
+  NOT by TechDocs, so we use an ABSOLUTE path. TechDocs rewrites *relative* asset
+  URLs to its own storage API (which would 404 the video); absolute "/..." paths
+  are left untouched. This URL only resolves on the hosted demo (base /tibco/hub);
+  in local dev the video simply won't load, which is fine. See deploy/demo.
+-->
+<video controls preload="metadata" width="100%" style="max-width:880px;border-radius:8px;display:block;margin:1.5rem auto;">
+  <source src="/tibco/hub/media/devhub-marketing.mp4" type="video/mp4">
+  Your browser does not support embedded video.
+</video>
+
 Most development teams lose hours every week to the same problem: finding the assets
 they need. APIs live in one place, documentation in another, and nobody is quite sure
 which components already exist or who owns them. The TIBCO® Developer Hub brings all of
