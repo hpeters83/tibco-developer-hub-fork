@@ -19,6 +19,7 @@ on:
       - 'package.json'
       - 'yarn.lock'
       - '.github/workflows/demo-image.yml'
+      - 'promotional-material/**'
   workflow_dispatch:
 
 concurrency:
