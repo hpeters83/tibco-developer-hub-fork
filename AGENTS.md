@@ -5,7 +5,7 @@ Claude Code users: see `CLAUDE.md`, which imports this file and adds Claude-spec
 
 ## What this is
 
-TIBCO® Developer Hub — a Backstage.io-based portal. This is a Yarn 4 (Berry) monorepo with workspaces under `packages/*` (the `app` frontend and `backend`) and `plugins/*` (in-repo Backstage plugins, all published under the `@internal/*` scope and consumed via `workspace:^`). Build tooling is the Backstage CLI (`backstage-cli`), not Webpack/Vite/Next directly. Node 22 or 24 is required; the package manager is pinned to `yarn@4.4.1`.
+TIBCO® Developer Hub — a Backstage.io-based portal. This is a Yarn 4 (Berry) monorepo with workspaces under `packages/*` (the `app` frontend and `backend`) and `plugins/*` (in-repo Backstage plugins, all published under the `@internal/*` scope and consumed via `workspace:^`). Build tooling is the Backstage CLI (`backstage-cli`), not Webpack/Vite/Next directly. Node 22 or 24 is required; the package manager is pinned to `yarn@4.17.0`.
 
 ## Common commands
 
@@ -84,7 +84,7 @@ Reusable workflows for common tasks in this repo. Full step-by-step runbooks liv
 
 Bootstrap a fresh local dev environment from a clean checkout.
 
-1. Verify prerequisites: Node 22 or 24, Yarn 4.4.1 (`corepack enable` if missing), C++ toolchain + Python 3 (needed to compile `isolated-vm` and `better-sqlite3` from source)
+1. Verify prerequisites: Node 22 or 24, Yarn 4.17.0 (`corepack enable` if missing), C++ toolchain + Python 3 (needed to compile `isolated-vm` and `better-sqlite3` from source)
 2. Choose database: **in-memory SQLite** (no Docker, data wiped on restart — recommended for local dev) or **Docker Postgres** (persistent, matches production — run `docker compose up -d` from `docker/`)
 3. Create config files from templates:
    - `cp app-config.template-local.yaml app-config.local.yaml`
