@@ -63,17 +63,28 @@ if (-not (Test-Path $Launcher)) {
   Invoke-WebRequest -Uri $Url -OutFile $tmpZip
   Write-Host "devhub-install: extracting to $Bundle"
   if (Test-Path $Bundle) { Remove-Item -Recurse -Force $Bundle }
-  # Extract with bsdtar (ships with Windows 10 1803+). It is dramatically faster than
-  # Expand-Archive on large node_modules trees and, unlike Expand-Archive, handles the
-  # long paths / symlinks deep under node\node_modules that otherwise make extraction
-  # fail (e.g. the "Cannot find path ...\node\node_modules\corepack" rollback error).
-  $tar = Get-Command tar.exe -ErrorAction SilentlyContinue
-  if ($tar) {
-    & $tar.Source -xf $tmpZip -C $Dest
-    if ($LASTEXITCODE -ne 0) { throw "tar extraction failed (exit $LASTEXITCODE)" }
+  # Extraction strategy depends on the variant:
+  #   bundled -> .NET ZipFile. The single index.js entry is ~80 MB deflated, which trips
+  #     the bsdtar/libarchive build shipped with Windows ("ZIP decompression failed (-5)").
+  #     .NET inflates large entries reliably, and the bundled layout is shallow + few files
+  #     so it has none of the MAX_PATH / speed problems that plague the classic tree.
+  #   classic -> bsdtar (tar.exe). Far faster on the deep node_modules tree and, unlike
+  #     .NET/Expand-Archive, handles the long paths / symlinks deep under node\node_modules
+  #     (e.g. the "Cannot find path ...\node\node_modules\corepack" rollback error).
+  if ($Variant -eq 'bundled') {
+    # ZipFile is built-in on PowerShell 7 (.NET); on Windows PowerShell 5.1 it needs
+    # the FileSystem assembly loaded first. Tolerate either.
+    try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop } catch {}
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($tmpZip, $Dest)
   } else {
-    Write-Warning 'devhub-install: tar.exe not found; falling back to Expand-Archive (slower).'
-    Expand-Archive -Path $tmpZip -DestinationPath $Dest -Force
+    $tar = Get-Command tar.exe -ErrorAction SilentlyContinue
+    if ($tar) {
+      & $tar.Source -xf $tmpZip -C $Dest
+      if ($LASTEXITCODE -ne 0) { throw "tar extraction failed (exit $LASTEXITCODE)" }
+    } else {
+      Write-Warning 'devhub-install: tar.exe not found; falling back to Expand-Archive (slower).'
+      Expand-Archive -Path $tmpZip -DestinationPath $Dest -Force
+    }
   }
   Remove-Item -Force $tmpZip
 }
