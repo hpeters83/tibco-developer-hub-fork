@@ -35,6 +35,10 @@ param(
   [string]$Url = $env:DEVHUB_URL
 )
 $ErrorActionPreference = 'Stop'
+# Invoke-WebRequest is 10-50x slower for large downloads while its progress bar is on
+# (Windows PowerShell 5.1 re-renders it constantly and buffers the whole response in
+# memory). Silence it so the fallback IWR path is fast; the curl.exe path below is faster still.
+$ProgressPreference = 'SilentlyContinue'
 
 $Target = 'win32-x64'
 $Name = if ($Variant -eq 'bundled') { "devhub-bundled-$Target" } else { "devhub-$Target" }
@@ -60,7 +64,15 @@ if (-not (Test-Path $Launcher)) {
   Write-Host "devhub-install: downloading $Url"
   New-Item -ItemType Directory -Force -Path $Dest | Out-Null
   $tmpZip = Join-Path $env:TEMP ("devhub-" + [System.Guid]::NewGuid().ToString('N') + '.zip')
-  Invoke-WebRequest -Uri $Url -OutFile $tmpZip
+  # Prefer curl.exe (ships with Windows 10 1803+): it streams to disk at full line speed,
+  # like a browser. Fall back to Invoke-WebRequest (now with the progress bar disabled).
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if ($curl) {
+    & $curl.Source -fSL --retry 3 $Url -o $tmpZip
+    if ($LASTEXITCODE -ne 0) { throw "download failed (curl exit $LASTEXITCODE). Check Version/Repo/Variant or that $Name.zip exists." }
+  } else {
+    Invoke-WebRequest -Uri $Url -OutFile $tmpZip
+  }
   Write-Host "devhub-install: extracting to $Bundle"
   if (Test-Path $Bundle) { Remove-Item -Recurse -Force $Bundle }
   # Extraction strategy depends on the variant:
