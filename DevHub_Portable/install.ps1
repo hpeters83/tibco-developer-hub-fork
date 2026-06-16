@@ -18,19 +18,26 @@
   GitHub owner/repo (default hpeters83/tibco-developer-hub-fork). Or set $env:DEVHUB_REPO.
 .PARAMETER Version
   Release tag or "latest" (default latest). Or set $env:DEVHUB_VERSION.
+.PARAMETER Variant
+  bundled | classic (default bundled). "bundled" is the single index.js + minimal
+  node_modules build (~3k files, extracts fast); "classic" is the full folder build.
+  Or set $env:DEVHUB_VARIANT.
 .PARAMETER Url
-  Full URL to devhub-win32-x64.zip (overrides Repo/Version). Or set $env:DEVHUB_URL.
+  Full URL to devhub[-bundled]-win32-x64.zip (overrides Repo/Version/Variant). Or set $env:DEVHUB_URL.
 #>
 param(
   [int]$Port = 0,
   [string[]]$Config = @(),
   [string]$Repo = $(if ($env:DEVHUB_REPO) { $env:DEVHUB_REPO } else { 'hpeters83/tibco-developer-hub-fork' }),
   [string]$Version = $(if ($env:DEVHUB_VERSION) { $env:DEVHUB_VERSION } else { 'latest' }),
+  [ValidateSet('bundled','classic')]
+  [string]$Variant = $(if ($env:DEVHUB_VARIANT) { $env:DEVHUB_VARIANT } else { 'bundled' }),
   [string]$Url = $env:DEVHUB_URL
 )
 $ErrorActionPreference = 'Stop'
 
 $Target = 'win32-x64'
+$Name = if ($Variant -eq 'bundled') { "devhub-bundled-$Target" } else { "devhub-$Target" }
 $InstallRoot = if ($env:DEVHUB_DIR) { $env:DEVHUB_DIR } else { (Get-Location).Path }
 
 if (-not $Url) {
@@ -40,11 +47,11 @@ if (-not $Url) {
     $Version = $rel.tag_name
     if (-not $Version) { throw "could not resolve latest release; pass -Version portable-vX.Y.Z" }
   }
-  $Url = "https://github.com/$Repo/releases/download/$Version/devhub-$Target.zip"
+  $Url = "https://github.com/$Repo/releases/download/$Version/$Name.zip"
 }
 
 $Dest = $InstallRoot
-$Bundle = Join-Path $Dest "devhub-$Target"
+$Bundle = Join-Path $Dest $Name
 $Launcher = Join-Path $Bundle 'devhub.cmd'
 
 if (($env:DEVHUB_FORCE -eq '1') -and (Test-Path $Bundle)) { Remove-Item -Recurse -Force $Bundle }

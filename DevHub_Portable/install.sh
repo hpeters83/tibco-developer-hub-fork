@@ -17,8 +17,11 @@
 #   DEVHUB_REPO     GitHub owner/repo to fetch releases from
 #                   (default: hpeters83/tibco-developer-hub-fork)
 #   DEVHUB_VERSION  release tag to install, or "latest" (default: latest)
-#   DEVHUB_URL      full URL to a devhub-<os>-<arch>.zip (overrides REPO/VERSION;
-#                   may be a file:// URL for local testing)
+#   DEVHUB_VARIANT  bundled | classic (default: bundled). "bundled" is the single
+#                   index.js + minimal node_modules build (~3k files, extracts fast);
+#                   "classic" is the full-node_modules folder build (~96k files).
+#   DEVHUB_URL      full URL to a devhub[-bundled]-<os>-<arch>.zip (overrides
+#                   REPO/VERSION/VARIANT; may be a file:// URL for local testing)
 #   DEVHUB_DIR      parent folder to extract into (default: current directory)
 #   DEVHUB_FORCE    set to 1 to re-download/re-extract even if already present
 #
@@ -26,6 +29,7 @@ set -euo pipefail
 
 REPO="${DEVHUB_REPO:-hpeters83/tibco-developer-hub-fork}"
 VERSION="${DEVHUB_VERSION:-latest}"
+VARIANT="${DEVHUB_VARIANT:-bundled}"
 INSTALL_ROOT="${DEVHUB_DIR:-$PWD}"
 
 err() { echo "devhub-install: $*" >&2; }
@@ -45,6 +49,13 @@ case "$(uname -m)" in
 esac
 TARGET="$OS-$ARCH"
 
+# Asset/folder name depends on the chosen variant.
+case "$VARIANT" in
+  bundled) NAME="devhub-bundled-$TARGET" ;;
+  classic) NAME="devhub-$TARGET" ;;
+  *) die "unknown DEVHUB_VARIANT '$VARIANT' (use 'bundled' or 'classic')." ;;
+esac
+
 have curl   || die "curl is required."
 have unzip  || die "unzip is required (install it, e.g. 'apt-get install unzip')."
 
@@ -56,11 +67,11 @@ if [ -z "${DEVHUB_URL:-}" ]; then
       | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
     [ -n "$VERSION" ] || die "could not resolve latest release. Set DEVHUB_VERSION=portable-vX.Y.Z."
   fi
-  DEVHUB_URL="https://github.com/$REPO/releases/download/$VERSION/devhub-$TARGET.zip"
+  DEVHUB_URL="https://github.com/$REPO/releases/download/$VERSION/$NAME.zip"
 fi
 
 DEST="$INSTALL_ROOT"
-BUNDLE="$DEST/devhub-$TARGET"
+BUNDLE="$DEST/$NAME"
 
 # --- download + extract (once) -----------------------------------------------
 if [ "${DEVHUB_FORCE:-0}" = "1" ]; then rm -rf "$BUNDLE"; fi
@@ -71,7 +82,7 @@ if [ ! -x "$BUNDLE/devhub" ]; then
   tmp_zip="$(mktemp -t devhub.XXXXXX.zip)"
   trap 'rm -f "$tmp_zip"' EXIT
   curl -fSL --progress-bar "$DEVHUB_URL" -o "$tmp_zip" \
-    || die "download failed. Check DEVHUB_VERSION/DEVHUB_REPO, or that the release asset devhub-$TARGET.zip exists."
+    || die "download failed. Check DEVHUB_VERSION/DEVHUB_REPO/DEVHUB_VARIANT, or that the release asset $NAME.zip exists."
   err "extracting to $BUNDLE"
   rm -rf "$BUNDLE"
   unzip -q "$tmp_zip" -d "$DEST"
