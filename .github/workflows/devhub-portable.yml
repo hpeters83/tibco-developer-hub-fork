@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Enable Corepack (Yarn 4.4.1)
+      - name: Enable Corepack
         run: corepack enable
 
       # Linux needs the C++ toolchain + Python for isolated-vm; macOS/Windows runners
@@ -70,3 +70,62 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: DevHub_Portable/dist/devhub-${{ matrix.target }}.zip
+
+  # Parallel variant: the esbuild-bundled build (single index.js + minimal sidecar
+  # node_modules). Ships ~3k files instead of ~96k, so the zip extracts ~10x faster.
+  # Produced alongside the classic bundle so both can be compared before switching.
+  build-bundled:
+    name: bundled-${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            runner: macos-14
+            shell: bash
+          - target: darwin-x64
+            runner: macos-13
+            shell: bash
+          - target: linux-x64
+            runner: ubuntu-latest
+            shell: bash
+          - target: win32-x64
+            runner: windows-latest
+            shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install build toolchain (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+
+      - name: Build bundled bundle (Unix)
+        if: matrix.shell == 'bash'
+        run: bash DevHub_Portable/scripts/build-bundled.sh
+
+      - name: Build bundled bundle (Windows)
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
+        run: DevHub_Portable/scripts/build-bundled.ps1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: devhub-bundled-${{ matrix.target }}
+          path: DevHub_Portable/dist/devhub-bundled-${{ matrix.target }}.zip
+          if-no-files-found: error
+
+      - name: Attach to release (tag builds)
+        if: startsWith(github.ref, 'refs/tags/portable-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DevHub_Portable/dist/devhub-bundled-${{ matrix.target }}.zip

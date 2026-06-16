@@ -68,6 +68,14 @@ echo "  URL:  http://localhost:${PORT}"
 echo "  Data: ${DEVHUB_DATA_DIR}"
 echo
 
-exec "$NODE_BIN" "$HERE/packages/backend" \
+# Entry point: the single-file esbuild bundle (index.js) if present, otherwise the
+# folder bundle (packages/backend). Both layouts ship the same launcher.
+if [[ -f "$HERE/index.js" ]]; then
+  ENTRY="$HERE/index.js"
+else
+  ENTRY="$HERE/packages/backend"
+fi
+
+exec "$NODE_BIN" "$ENTRY" \
   --config "$HERE/app-config.portable.yaml" \
   ${EXTRA_CONFIGS[@]+"${EXTRA_CONFIGS[@]}"}

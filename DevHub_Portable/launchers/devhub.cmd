@@ -60,5 +60,12 @@ echo   URL:  http://localhost:%DEVHUB_PORT%
 echo   Data: %DEVHUB_DATA_DIR%
 echo.
 
-"%NODE_BIN%" "%HERE%\packages\backend" --config "%HERE%\app-config.portable.yaml"!EXTRA_CONFIGS!
+REM Entry point: single-file esbuild bundle (index.js) if present, else folder bundle.
+if exist "%HERE%\index.js" (
+  set "ENTRY=%HERE%\index.js"
+) else (
+  set "ENTRY=%HERE%\packages\backend"
+)
+
+"%NODE_BIN%" "%ENTRY%" --config "%HERE%\app-config.portable.yaml"!EXTRA_CONFIGS!
 exit /b %errorlevel%
