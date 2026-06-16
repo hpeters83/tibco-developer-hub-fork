@@ -11,13 +11,16 @@ set "HERE=%~dp0"
 REM strip trailing backslash
 if "%HERE:~-1%"=="\" set "HERE=%HERE:~0,-1%"
 
-if not defined DEVHUB_PORT set "DEVHUB_PORT=7007"
+REM Track whether the port was chosen deliberately (env or --port). If so we won't
+REM silently move it; if it's the default we fall back to a free port when busy.
+if defined DEVHUB_PORT (set "PORT_EXPLICIT=1") else (set "PORT_EXPLICIT=0" & set "DEVHUB_PORT=7007")
 set "EXTRA_CONFIGS="
 
 :parse
 if "%~1"=="" goto run
 if /i "%~1"=="--port" (
   set "DEVHUB_PORT=%~2"
+  set "PORT_EXPLICIT=1"
   shift & shift & goto parse
 )
 if /i "%~1"=="--config" (
@@ -53,6 +56,23 @@ set "NODE_BIN=%HERE%\node\node.exe"
 if not exist "%NODE_BIN%" (
   echo devhub: bundled Node runtime not found at %NODE_BIN% 1>&2
   exit /b 1
+)
+
+REM Resolve a usable port: fall back to a free one if the default is busy; if the
+REM user picked the port (env/--port) and it's busy, fail clearly.
+if exist "%HERE%\find-free-port.cjs" (
+  set "CHOSENPORT="
+  for /f "usebackq delims=" %%i in (`""%NODE_BIN%" "%HERE%\find-free-port.cjs" %DEVHUB_PORT% %PORT_EXPLICIT%"`) do set "CHOSENPORT=%%i"
+  if not defined CHOSENPORT (
+    if "%PORT_EXPLICIT%"=="1" (
+      echo devhub: port %DEVHUB_PORT% is already in use. Free it or pick another with --port. 1>&2
+    ) else (
+      echo devhub: no free port found near %DEVHUB_PORT%. 1>&2
+    )
+    exit /b 1
+  )
+  if not "!CHOSENPORT!"=="%DEVHUB_PORT%" echo Port %DEVHUB_PORT% is in use - starting on !CHOSENPORT! instead. 1>&2
+  set "DEVHUB_PORT=!CHOSENPORT!"
 )
 
 echo Starting TIBCO Developer Hub (portable)

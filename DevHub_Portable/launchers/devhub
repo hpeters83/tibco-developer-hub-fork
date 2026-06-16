@@ -20,6 +20,10 @@ done
 HERE="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
 PORT="${DEVHUB_PORT:-7007}"
+# Track whether the port was chosen deliberately (env or --port). If so we won't
+# silently move it; if it's the default we fall back to a free port when busy.
+PORT_EXPLICIT=0
+[[ -n "${DEVHUB_PORT:-}" ]] && PORT_EXPLICIT=1
 EXTRA_CONFIGS=()
 
 show_help() {
@@ -28,8 +32,8 @@ show_help() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --port)     PORT="${2:?--port needs a value}"; shift 2 ;;
-    --port=*)   PORT="${1#*=}"; shift ;;
+    --port)     PORT="${2:?--port needs a value}"; PORT_EXPLICIT=1; shift 2 ;;
+    --port=*)   PORT="${1#*=}"; PORT_EXPLICIT=1; shift ;;
     --config)   EXTRA_CONFIGS+=("--config" "${2:?--config needs a path}"); shift 2 ;;
     --config=*) EXTRA_CONFIGS+=("--config" "${1#*=}"); shift ;;
     -h|--help)  show_help; exit 0 ;;
@@ -38,7 +42,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- runtime environment -----------------------------------------------------
-export DEVHUB_PORT="$PORT"
 export DEVHUB_DATA_DIR="${DEVHUB_DATA_DIR:-$HERE/data}"
 # Required for the Scaffolder's isolated-vm to work.
 export NODE_OPTIONS="${NODE_OPTIONS:---no-node-snapshot}"
@@ -62,6 +65,25 @@ if [[ ! -x "$NODE_BIN" ]]; then
   echo "devhub: bundled Node runtime not found at $NODE_BIN" >&2
   exit 1
 fi
+
+# Resolve a usable port. If the chosen port is busy: when it's the default, fall
+# back to the next free one; when the user picked it (env/--port), fail clearly.
+if [[ -f "$HERE/find-free-port.cjs" ]]; then
+  if CHOSEN="$("$NODE_BIN" "$HERE/find-free-port.cjs" "$PORT" "$PORT_EXPLICIT")"; then
+    if [[ -n "$CHOSEN" && "$CHOSEN" != "$PORT" ]]; then
+      echo "Port $PORT is in use — starting on $CHOSEN instead." >&2
+      PORT="$CHOSEN"
+    fi
+  else
+    if [[ "$PORT_EXPLICIT" -eq 1 ]]; then
+      echo "devhub: port $PORT is already in use. Free it (lsof -iTCP:$PORT) or pick another with --port." >&2
+    else
+      echo "devhub: no free port found near $PORT." >&2
+    fi
+    exit 1
+  fi
+fi
+export DEVHUB_PORT="$PORT"
 
 echo "Starting TIBCO Developer Hub (portable)"
 echo "  URL:  http://localhost:${PORT}"

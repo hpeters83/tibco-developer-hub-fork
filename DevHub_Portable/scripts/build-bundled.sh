@@ -121,6 +121,7 @@ fi
 echo "==> Adding config, launcher and README"
 cp "$PORTABLE_DIR/config/app-config.portable.yaml" "$BUNDLE/"
 cp "$PORTABLE_DIR/launchers/devhub" "$BUNDLE/devhub"
+cp "$PORTABLE_DIR/launchers/find-free-port.cjs" "$BUNDLE/find-free-port.cjs"
 chmod +x "$BUNDLE/devhub"
 mkdir -p "$BUNDLE/data"
 

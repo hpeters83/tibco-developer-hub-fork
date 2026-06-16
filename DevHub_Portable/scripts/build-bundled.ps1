@@ -113,6 +113,7 @@ if (-not (Test-Path (Join-Path $Bundle 'node\node.exe'))) { throw 'embedded node
 Write-Host '==> Adding config, launcher and README'
 Copy-Item (Join-Path $PortableDir 'config\app-config.portable.yaml') $Bundle
 Copy-Item (Join-Path $PortableDir 'launchers\devhub.cmd') $Bundle
+Copy-Item (Join-Path $PortableDir 'launchers\find-free-port.cjs') $Bundle
 New-Item -ItemType Directory -Path (Join-Path $Bundle 'data') | Out-Null
 
 @"
