@@ -114,6 +114,10 @@ Copy-Item (Join-Path $PortableDir 'config\app-config.portable.yaml') $Bundle
 Copy-Item (Join-Path $PortableDir 'launchers\devhub.cmd') $Bundle
 Copy-Item (Join-Path $PortableDir 'launchers\find-free-port.cjs') $Bundle
 New-Item -ItemType Directory -Path (Join-Path $Bundle 'data') | Out-Null
+# Version stamp shown on launch. For release downloads the installer overwrites this
+# with the release tag; a directly-run local build keeps this build marker.
+Set-Content -Path (Join-Path $Bundle '.devhub-release') `
+  -Value ("local build " + (Get-Date -Format 'yyyy-MM-ddTHH:mmZ')) -NoNewline
 
 @"
 TIBCO Developer Hub - Portable, bundled ($Target)

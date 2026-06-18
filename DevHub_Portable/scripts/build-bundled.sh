@@ -124,6 +124,9 @@ cp "$PORTABLE_DIR/launchers/devhub" "$BUNDLE/devhub"
 cp "$PORTABLE_DIR/launchers/find-free-port.cjs" "$BUNDLE/find-free-port.cjs"
 chmod +x "$BUNDLE/devhub"
 mkdir -p "$BUNDLE/data"
+# Version stamp shown on launch. For release downloads the installer overwrites this
+# with the release tag; a directly-run local build keeps this build marker.
+printf 'local build %s\n' "$(date -u +%Y-%m-%dT%H:%MZ)" > "$BUNDLE/.devhub-release"
 
 cat > "$BUNDLE/README.txt" <<EOF
 TIBCO Developer Hub — Portable, bundled ($TARGET)
