@@ -86,6 +86,7 @@ if (-not (Test-Path $Launcher)) { throw "bundle launcher not found at $Launcher 
 # If an existing bundle was reused (no download) and the latest release is newer, hint at
 # upgrading — the extracted folder name has no version, so it isn't auto-updated.
 $installed = if (Test-Path (Join-Path $Bundle '.devhub-release')) { (Get-Content (Join-Path $Bundle '.devhub-release') -Raw).Trim() } else { 'unknown' }
+Write-Host "devhub-install: release: $installed"
 if ($Version -ne 'latest' -and $installed -ne $Version) {
   if ($installed -eq 'unknown') {
     Write-Host "devhub-install: installed version unknown (older bundle); latest is $Version - set `$env:DEVHUB_FORCE=1 to refresh."

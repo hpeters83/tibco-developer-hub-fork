@@ -91,6 +91,7 @@ fi
 # If an existing bundle was reused (no download) and the latest release is newer,
 # hint at upgrading — the extracted folder name has no version, so it isn't auto-updated.
 INSTALLED="$(cat "$BUNDLE/.devhub-release" 2>/dev/null || echo unknown)"
+err "release: $INSTALLED"
 if [ "$VERSION" != "latest" ] && [ "$INSTALLED" != "$VERSION" ]; then
   if [ "$INSTALLED" = "unknown" ]; then
     err "installed version unknown (older bundle); latest is $VERSION — run with DEVHUB_FORCE=1 to refresh."
