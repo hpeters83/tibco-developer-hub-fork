@@ -7,8 +7,9 @@
 # assets). Result: ~3k files, so the zip extracts in seconds.
 #
 # Output: DevHub_Portable/dist/devhub-bundled-<os>-<arch>/ and a matching .zip.
-# Native modules are compiled for the host, so this builds only the host platform;
-# the other targets come from the GitHub Actions matrix.
+# Native modules are compiled for the host, so this builds only the host platform.
+# To build all targets locally, use build-all.sh (host + Linux via Docker); the
+# Windows zip is built by running build-bundled.ps1 on a Windows machine.
 #
 # Usage:
 #   DevHub_Portable/scripts/build-bundled.sh [--skip-install] [--no-zip] [--keep-node]
