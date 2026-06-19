@@ -71,8 +71,15 @@ $env:DEVHUB_PORT = '7071'
 $env:DEVHUB_DATA_DIR = $DataDir
 $env:DOC_URL = 'https://example.com'
 $env:NODE_OPTIONS = '--no-node-snapshot'
-# Self-exits after DEVHUB_TRACE_EXIT_MS; tolerate a non-zero exit.
+# Self-exits after DEVHUB_TRACE_EXIT_MS. Booting the bundle writes warnings to stderr
+# (e.g. the punycode DeprecationWarning); with $ErrorActionPreference='Stop' PowerShell
+# turns native-command stderr into a terminating NativeCommandError, so relax it just for
+# this call. The *> redirect captures all output to the log, and success is judged by
+# whether the package list was written (checked below), not by the exit/stderr.
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & node (Join-Path $ScriptDir 'trace-requires.cjs') --config (Join-Path $PortableDir 'config\app-config.portable.yaml') *> (Join-Path $DataDir 'trace.log')
+$ErrorActionPreference = $prevEAP
 if (-not (Test-Path $PkgList) -or (Get-Item $PkgList).Length -eq 0) {
   Write-Host (Get-Content (Join-Path $DataDir 'trace.log') -Tail 30 -ErrorAction SilentlyContinue)
   throw 'trace produced no package list'
