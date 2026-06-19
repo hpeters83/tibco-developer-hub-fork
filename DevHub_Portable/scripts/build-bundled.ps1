@@ -22,6 +22,10 @@ param(
   [switch]$KeepNode
 )
 $ErrorActionPreference = 'Stop'
+# Invoke-WebRequest is 10-50x slower while its progress bar is on (Windows PowerShell
+# re-renders it constantly and buffers the whole response in memory), which makes the
+# Node download crawl. Disable it for the whole script.
+$ProgressPreference = 'SilentlyContinue'
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PortableDir = Split-Path -Parent $ScriptDir
@@ -101,7 +105,15 @@ $NodePkg = "node-$NodeVersion-win-$Arch"   # nodejs.org uses the "win" token
 $TmpNode = Join-Path ([System.IO.Path]::GetTempPath()) ("devhub-node-" + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $TmpNode | Out-Null
 $NodeZip = Join-Path $TmpNode 'node.zip'
-Invoke-WebRequest -Uri "https://nodejs.org/dist/$NodeVersion/$NodePkg.zip" -OutFile $NodeZip
+$NodeUrl = "https://nodejs.org/dist/$NodeVersion/$NodePkg.zip"
+# Prefer curl.exe (ships with Windows 10 1803+) for full-speed streaming; fall back to IWR.
+$curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+if ($curl) {
+  & $curl.Source -fSL --retry 3 $NodeUrl -o $NodeZip
+  if ($LASTEXITCODE -ne 0) { throw "Node download failed (curl exit $LASTEXITCODE)" }
+} else {
+  Invoke-WebRequest -Uri $NodeUrl -OutFile $NodeZip
+}
 Expand-Archive -Path $NodeZip -DestinationPath $TmpNode
 if (Test-Path (Join-Path $Bundle 'node')) { Remove-Item -Recurse -Force (Join-Path $Bundle 'node') }
 Move-Item (Join-Path $TmpNode $NodePkg) (Join-Path $Bundle 'node')
