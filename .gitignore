@@ -73,3 +73,7 @@ environment.sh
 # Local environment variables
 /.env.yarn
 /TestPortable/
+/AGENTS.md
+/CLAUDE.md
+/CLAUDE_Portable_Architecture_Plan.md
+/HugoNotes.txt
