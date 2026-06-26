@@ -60,6 +60,60 @@ fi
 
 mkdir -p "$DEVHUB_DATA_DIR"
 
+# --- TechDocs (mkdocs) provisioning -----------------------------------------
+# TechDocs is configured with generator.runIn: 'local', which spawns the `mkdocs`
+# Python CLI to build each docs page on demand. That binary is NOT bundled, so the
+# first time docs are opened we'd hit `spawn mkdocs ENOENT`. To keep the bundle
+# self-contained we create a one-off Python venv under the bundle and install
+# mkdocs-techdocs-core into it, then put it on PATH for the backend process.
+#
+# This is best-effort: if Python 3 isn't available or the install fails, the hub
+# still starts — only TechDocs page rendering will be unavailable. Set
+# DEVHUB_SKIP_TECHDOCS=1 to skip provisioning entirely.
+provision_mkdocs() {
+  [[ "${DEVHUB_SKIP_TECHDOCS:-0}" = "1" ]] && return 0
+
+  local venv="$HERE/.venv"
+  local venv_bin="$venv/bin"
+
+  # Already resolvable on PATH (system mkdocs) — nothing to do.
+  if command -v mkdocs >/dev/null 2>&1; then
+    return 0
+  fi
+  # Previously provisioned venv — just put it on PATH.
+  if [[ -x "$venv_bin/mkdocs" ]]; then
+    export PATH="$venv_bin:$PATH"
+    return 0
+  fi
+
+  local py
+  for c in python3 python; do
+    if command -v "$c" >/dev/null 2>&1; then py="$c"; break; fi
+  done
+  if [[ -z "${py:-}" ]]; then
+    echo "devhub: Python 3 not found — TechDocs rendering will be unavailable." >&2
+    echo "        Install Python 3 (and rerun), or set DEVHUB_SKIP_TECHDOCS=1 to silence this." >&2
+    return 0
+  fi
+
+  echo "Setting up TechDocs (mkdocs) — one-time, needs network access..." >&2
+  if ! "$py" -m venv "$venv" >/dev/null 2>&1; then
+    echo "devhub: failed to create Python venv at $venv — TechDocs unavailable." >&2
+    rm -rf "$venv" 2>/dev/null || true
+    return 0
+  fi
+  if ! "$venv_bin/python" -m pip install --quiet --disable-pip-version-check \
+      --upgrade pip mkdocs-techdocs-core >&2; then
+    echo "devhub: failed to install mkdocs-techdocs-core — TechDocs unavailable." >&2
+    echo "        Check network/proxy, then delete $venv and rerun." >&2
+    rm -rf "$venv" 2>/dev/null || true
+    return 0
+  fi
+  export PATH="$venv_bin:$PATH"
+  echo "TechDocs ready (mkdocs installed into $venv)." >&2
+}
+provision_mkdocs
+
 NODE_BIN="$HERE/node/bin/node"
 if [[ ! -x "$NODE_BIN" ]]; then
   echo "devhub: bundled Node runtime not found at $NODE_BIN" >&2

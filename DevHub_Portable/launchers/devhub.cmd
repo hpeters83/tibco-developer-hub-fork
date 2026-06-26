@@ -52,6 +52,47 @@ if not "%GITHUB_TOKEN%"=="" set "APP_CONFIG_integrations_github_0_token=%GITHUB_
 
 if not exist "%DEVHUB_DATA_DIR%" mkdir "%DEVHUB_DATA_DIR%"
 
+REM --- TechDocs (mkdocs) provisioning ----------------------------------------
+REM TechDocs (generator.runIn: 'local') spawns the `mkdocs` Python CLI to build
+REM docs pages on demand; that binary isn't bundled. Create a one-off Python venv
+REM under the bundle and install mkdocs-techdocs-core into it, then put it on PATH.
+REM Best-effort: if Python isn't available the hub still starts (docs unavailable).
+REM Set DEVHUB_SKIP_TECHDOCS=1 to skip.
+if not "%DEVHUB_SKIP_TECHDOCS%"=="1" (
+  set "VENV=%HERE%\.venv"
+  set "VENV_BIN=%HERE%\.venv\Scripts"
+  where mkdocs >nul 2>&1
+  if errorlevel 1 (
+    if exist "!VENV_BIN!\mkdocs.exe" (
+      set "PATH=!VENV_BIN!;%PATH%"
+    ) else (
+      set "PYBIN="
+      where python >nul 2>&1 && set "PYBIN=python"
+      if not defined PYBIN (where py >nul 2>&1 && set "PYBIN=py")
+      if not defined PYBIN (
+        echo devhub: Python 3 not found - TechDocs rendering will be unavailable. 1>&2
+        echo         Install Python 3 and rerun, or set DEVHUB_SKIP_TECHDOCS=1 to silence this. 1>&2
+      ) else (
+        echo Setting up TechDocs ^(mkdocs^) - one-time, needs network access... 1>&2
+        "!PYBIN!" -m venv "!VENV!" >nul 2>&1
+        if exist "!VENV_BIN!\python.exe" (
+          "!VENV_BIN!\python.exe" -m pip install --quiet --disable-pip-version-check --upgrade pip mkdocs-techdocs-core 1>&2
+          if exist "!VENV_BIN!\mkdocs.exe" (
+            set "PATH=!VENV_BIN!;%PATH%"
+            echo TechDocs ready ^(mkdocs installed into !VENV!^). 1>&2
+          ) else (
+            echo devhub: failed to install mkdocs-techdocs-core - TechDocs unavailable. 1>&2
+            rmdir /s /q "!VENV!" >nul 2>&1
+          )
+        ) else (
+          echo devhub: failed to create Python venv - TechDocs unavailable. 1>&2
+          rmdir /s /q "!VENV!" >nul 2>&1
+        )
+      )
+    )
+  )
+)
+
 set "NODE_BIN=%HERE%\node\node.exe"
 if not exist "%NODE_BIN%" (
   echo devhub: bundled Node runtime not found at %NODE_BIN% 1>&2
