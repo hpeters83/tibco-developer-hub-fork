@@ -74,9 +74,11 @@ integrations:
 techdocs:
   builder: 'local'
   generator:
-    # 'local' avoids the Docker dependency. NOTE: rendering a docs page additionally
-    # needs Python 3 + mkdocs-techdocs-core on PATH; this is NOT bundled. The backend
-    # still starts fine without it — only opening a TechDocs page would fail.
+    # 'local' avoids the Docker dependency. Rendering a docs page additionally needs
+    # the `mkdocs` CLI (Python 3 + mkdocs-techdocs-core) on PATH. The launcher
+    # provisions this automatically on first run into a bundle-local .venv (needs
+    # Python 3 + network access once); set DEVHUB_SKIP_TECHDOCS=1 to opt out. The
+    # backend still starts fine without it — only opening a TechDocs page would fail.
     runIn: 'local'
   publisher:
     type: 'local'
