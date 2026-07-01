@@ -7,9 +7,10 @@
 #   2. tag the commit (portable-v*)
 #   3. gh release create with the zips attached
 #
-# Windows (win32-x64) cannot be built here — build it on a Windows machine with
-# DevHub_Portable/scripts/build-bundled.ps1 and drop the zip into
-# DevHub_Portable/dist/ before running this (it will be picked up automatically).
+# Windows (win32-x64) cannot be built here — either drop win zips into
+# DevHub_Portable/dist/ before running this (they're picked up automatically), or
+# build + publish them from the Windows machine with release-portable.ps1 (it uploads
+# to this same release, creating it if it doesn't exist yet).
 #
 # Usage:
 #   ./release-portable.sh <version>
