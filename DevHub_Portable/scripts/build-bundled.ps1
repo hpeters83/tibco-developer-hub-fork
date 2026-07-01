@@ -15,12 +15,17 @@
 .PARAMETER SkipInstall  Skip "yarn install --immutable".
 .PARAMETER NoZip        Do not produce the .zip.
 .PARAMETER KeepNode     Keep the full Node runtime (default strips it to node.exe).
+.PARAMETER TechDocs     ALSO build the self-contained devhub-bundled-techdocs-win32-x64 zip
+                        (embeds a standalone Python + mkdocs so TechDocs needs no host
+                        Python/network; larger zip).
 #>
 param(
   [switch]$SkipInstall,
   [switch]$NoZip,
-  [switch]$KeepNode
+  [switch]$KeepNode,
+  [switch]$TechDocs
 )
+$PbsPythonSeries = if ($env:PBS_PYTHON_SERIES) { $env:PBS_PYTHON_SERIES } else { '3.12' }
 $ErrorActionPreference = 'Stop'
 # Invoke-WebRequest is 10-50x slower while its progress bar is on (Windows PowerShell
 # re-renders it constantly and buffers the whole response in memory), which makes the
@@ -167,3 +172,77 @@ if (-not $NoZip) {
 }
 
 Write-Host "==> Done: $Bundle"
+
+# --- 8. techdocs variant (optional) ----------------------------------------
+# Self-contained build: a copy of the lean bundle plus a RELOCATABLE standalone
+# Python (from astral-sh/python-build-standalone) with mkdocs-techdocs-core
+# pre-installed under .\python, and a .\python-bin\mkdocs.cmd wrapper the launcher
+# prefers. TechDocs then renders with no host Python and no network. Larger zip.
+if ($TechDocs) {
+  Write-Host "==> Building self-contained TechDocs variant (devhub-bundled-techdocs-$Target)"
+  $TdBundle = Join-Path $Out "devhub-bundled-techdocs-$Target"
+  if (Test-Path $TdBundle) { Remove-Item -Recurse -Force $TdBundle }
+  Copy-Item -Recurse -Force $Bundle $TdBundle
+
+  $triple = 'x86_64-pc-windows-msvc'
+  Write-Host "==> Resolving standalone Python ($PbsPythonSeries, $triple)"
+  $hdr = @{ 'User-Agent' = 'devhub-build' }
+  if ($env:GITHUB_TOKEN) { $hdr['Authorization'] = "Bearer $($env:GITHUB_TOKEN)" }
+  $rel = Invoke-RestMethod -Headers $hdr `
+    'https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest'
+  $seriesRe = [regex]::Escape($PbsPythonSeries)
+  $asset = $rel.assets |
+    Where-Object { $_.name -match "cpython-$seriesRe\.\d.*-$triple-install_only\.tar\.gz$" } |
+    Select-Object -First 1
+  if (-not $asset) { throw "could not resolve a standalone Python for $triple (series $PbsPythonSeries)" }
+
+  Write-Host "==> Downloading $($asset.name)"
+  $TmpPy = Join-Path ([System.IO.Path]::GetTempPath()) ("devhub-py-" + [System.Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $TmpPy | Out-Null
+  $PyTar = Join-Path $TmpPy 'python.tar.gz'
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if ($curl) {
+    & $curl.Source -fSL --retry 3 $asset.browser_download_url -o $PyTar
+    if ($LASTEXITCODE -ne 0) { throw "Python download failed (curl exit $LASTEXITCODE)" }
+  } else {
+    Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $PyTar
+  }
+  & tar.exe -x -z -f $PyTar -C $TmpPy   # extracts to $TmpPy\python
+  if ($LASTEXITCODE -ne 0) { throw "Python extract failed (tar exit $LASTEXITCODE)" }
+  if (Test-Path (Join-Path $TdBundle 'python')) { Remove-Item -Recurse -Force (Join-Path $TdBundle 'python') }
+  Move-Item (Join-Path $TmpPy 'python') (Join-Path $TdBundle 'python')
+  Remove-Item -Recurse -Force $TmpPy
+
+  Write-Host '==> Installing mkdocs-techdocs-core into embedded Python'
+  $PyExe = Join-Path $TdBundle 'python\python.exe'
+  & $PyExe -m ensurepip --upgrade 2>$null
+  & $PyExe -m pip install --quiet --disable-pip-version-check --upgrade pip mkdocs-techdocs-core
+  if ($LASTEXITCODE -ne 0) { throw "pip install mkdocs-techdocs-core failed (exit $LASTEXITCODE)" }
+
+  # Path-independent wrapper: Backstage spawns the literal `mkdocs` command.
+  New-Item -ItemType Directory -Path (Join-Path $TdBundle 'python-bin') | Out-Null
+  @'
+@echo off
+"%~dp0..\python\python.exe" -m mkdocs %*
+'@ | Set-Content -Path (Join-Path $TdBundle 'python-bin\mkdocs.cmd') -Encoding ASCII
+
+  Add-Content -Path (Join-Path $TdBundle 'README.txt') -Value @"
+
+This is the self-contained TechDocs build: it embeds a standalone Python runtime
+with mkdocs (under .\python) so generating documentation works with no host Python
+and no network access. It is larger than the standard bundle for that reason.
+"@
+
+  if (-not $NoZip) {
+    Write-Host '==> Zipping techdocs variant'
+    $TdZip = Join-Path $Out "devhub-bundled-techdocs-$Target.zip"
+    if (Test-Path $TdZip) { Remove-Item -Force $TdZip }
+    Push-Location $Out
+    try {
+      & tar.exe -c -f $TdZip --format zip "devhub-bundled-techdocs-$Target"
+      if ($LASTEXITCODE -ne 0) { throw "tar zip creation failed (exit $LASTEXITCODE)" }
+    } finally { Pop-Location }
+    Write-Host "==> Wrote $TdZip"
+  }
+  Write-Host "==> Done: $TdBundle"
+}

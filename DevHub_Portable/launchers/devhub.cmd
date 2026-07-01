@@ -59,6 +59,12 @@ REM under the bundle and install mkdocs-techdocs-core into it, then put it on PA
 REM Best-effort: if Python isn't available the hub still starts (docs unavailable).
 REM Set DEVHUB_SKIP_TECHDOCS=1 to skip.
 if not "%DEVHUB_SKIP_TECHDOCS%"=="1" (
+  REM Self-contained "techdocs" bundle: relocatable Python with mkdocs ships under
+  REM %HERE%\python, with a wrapper in %HERE%\python-bin. Prefer it (no host Python).
+  if exist "%HERE%\python-bin\mkdocs.cmd" (
+    set "PATH=%HERE%\python-bin;%PATH%"
+    goto techdocs_done
+  )
   set "VENV=%HERE%\.venv"
   set "VENV_BIN=%HERE%\.venv\Scripts"
   where mkdocs >nul 2>&1
@@ -92,6 +98,7 @@ if not "%DEVHUB_SKIP_TECHDOCS%"=="1" (
     )
   )
 )
+:techdocs_done
 
 set "NODE_BIN=%HERE%\node\node.exe"
 if not exist "%NODE_BIN%" (

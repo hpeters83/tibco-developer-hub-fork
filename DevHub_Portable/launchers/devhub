@@ -76,6 +76,15 @@ provision_mkdocs() {
   local venv="$HERE/.venv"
   local venv_bin="$venv/bin"
 
+  # Self-contained "techdocs" bundle: a relocatable standalone Python with mkdocs
+  # pre-installed ships under $HERE/python, with a path-independent `mkdocs` wrapper
+  # in $HERE/python-bin. Prefer it — needs no host Python and no network. The lean
+  # bundle doesn't have these paths, so it falls through to the logic below.
+  if [[ -x "$HERE/python-bin/mkdocs" ]]; then
+    export PATH="$HERE/python-bin:$PATH"
+    return 0
+  fi
+
   # Already resolvable on PATH (system mkdocs) — nothing to do.
   if command -v mkdocs >/dev/null 2>&1; then
     return 0

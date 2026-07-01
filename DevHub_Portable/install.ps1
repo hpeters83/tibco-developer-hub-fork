@@ -35,7 +35,9 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $Target = 'win32-x64'
-$Name = "devhub-bundled-$Target"
+# Set $env:DEVHUB_TECHDOCS=1 to install the self-contained variant (embeds Python +
+# mkdocs so TechDocs works with no host Python / network; larger download).
+$Name = if ($env:DEVHUB_TECHDOCS -eq '1') { "devhub-bundled-techdocs-$Target" } else { "devhub-bundled-$Target" }
 $InstallRoot = if ($env:DEVHUB_DIR) { $env:DEVHUB_DIR } else { (Get-Location).Path }
 
 if (-not $Url) {

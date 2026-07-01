@@ -16,6 +16,9 @@
 #   DevHub_Portable/scripts/build-all.sh [--skip-install] [--skip-linux]
 #     --skip-install   pass through to the host build (reuse existing node_modules)
 #     --skip-linux     build the host target only (no Docker)
+#     --techdocs       ALSO build the self-contained devhub-bundled-techdocs-* zips
+#                      (embed a standalone Python + mkdocs so TechDocs needs no host
+#                      Python/network; larger zips)
 #
 set -euo pipefail
 
@@ -26,10 +29,12 @@ DIST="$PORTABLE_DIR/dist"
 
 SKIP_INSTALL=0
 SKIP_LINUX=0
+DO_TECHDOCS=0
 for arg in "$@"; do
   case "$arg" in
     --skip-install) SKIP_INSTALL=1 ;;
     --skip-linux)   SKIP_LINUX=1 ;;
+    --techdocs)     DO_TECHDOCS=1 ;;
     *) echo "build-all: unknown argument '$arg'" >&2; exit 1 ;;
   esac
 done
@@ -40,6 +45,7 @@ mkdir -p "$DIST"
 echo "==> [1/2] Building host target natively"
 HOST_ARGS=()
 [[ "$SKIP_INSTALL" -eq 1 ]] && HOST_ARGS+=(--skip-install)
+[[ "$DO_TECHDOCS" -eq 1 ]] && HOST_ARGS+=(--techdocs)
 bash "$SCRIPT_DIR/build-bundled.sh" ${HOST_ARGS[@]+"${HOST_ARGS[@]}"}
 
 # --- 2. linux-x64 build (Docker) ---------------------------------------------
@@ -58,6 +64,7 @@ if [[ "$SKIP_LINUX" -eq 0 ]]; then
   # and copies the resulting zip back into the host dist via the /out bind mount.
   # --platform linux/amd64 forces an x64 build even on Apple Silicon (uses emulation).
   docker run --rm --platform linux/amd64 \
+    -e "DO_TECHDOCS=$DO_TECHDOCS" \
     -v "$ROOT":/src:ro \
     -v "$DIST":/out \
     node:24-bookworm bash -euo pipefail -c '
@@ -70,10 +77,13 @@ if [[ "$SKIP_LINUX" -eq 0 ]]; then
       mkdir -p /build
       rsync -a --exclude node_modules --exclude .git --exclude "DevHub_Portable/dist" /src/ /build/
       cd /build
+      BUILD_ARGS=()
+      [ "${DO_TECHDOCS:-0}" = "1" ] && BUILD_ARGS+=(--techdocs)
       echo "--- building linux-x64 bundle ---"
-      bash DevHub_Portable/scripts/build-bundled.sh
+      bash DevHub_Portable/scripts/build-bundled.sh "${BUILD_ARGS[@]}"
       cp DevHub_Portable/dist/devhub-bundled-linux-x64.zip /out/
-      echo "--- linux-x64 zip copied to host dist ---"
+      [ "${DO_TECHDOCS:-0}" = "1" ] && cp DevHub_Portable/dist/devhub-bundled-techdocs-linux-x64.zip /out/
+      echo "--- linux-x64 zip(s) copied to host dist ---"
     '
 else
   echo "==> [2/2] Skipping linux-x64 (--skip-linux)"

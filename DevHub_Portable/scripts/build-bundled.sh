@@ -24,14 +24,19 @@ OUT="$PORTABLE_DIR/dist"
 SKIP_INSTALL=0
 DO_ZIP=1
 STRIP_NODE=1
+DO_TECHDOCS=0
 for arg in "$@"; do
   case "$arg" in
     --skip-install) SKIP_INSTALL=1 ;;
     --no-zip)       DO_ZIP=0 ;;
     --keep-node)    STRIP_NODE=0 ;;
+    --techdocs)     DO_TECHDOCS=1 ;;
     *) echo "build-bundled: unknown argument '$arg'" >&2; exit 1 ;;
   esac
 done
+
+# Standalone-Python series embedded into the techdocs variant (override if needed).
+PBS_PYTHON_SERIES="${PBS_PYTHON_SERIES:-3.12}"
 
 # --- detect target os/arch ---------------------------------------------------
 case "$(uname -s)" in
@@ -152,3 +157,81 @@ fi
 
 echo "==> Done: $BUNDLE"
 echo "    files: $(find "$BUNDLE" -type f | wc -l | tr -d ' ')"
+
+# --- 8. techdocs variant (optional) ------------------------------------------
+# A second, self-contained bundle that embeds a RELOCATABLE standalone Python
+# (from astral-sh/python-build-standalone) with mkdocs-techdocs-core pre-installed,
+# so TechDocs renders on a bare machine with no host Python and no network. It's a
+# copy of the lean bundle plus a ./python runtime and a path-independent ./python-bin/mkdocs
+# wrapper (the launcher prefers these when present). Shipped as a separate, larger zip.
+embed_standalone_python() {
+  local dest="$1" os="$2" arch="$3"
+  local triple
+  case "$os-$arch" in
+    darwin-arm64) triple="aarch64-apple-darwin" ;;
+    darwin-x64)   triple="x86_64-apple-darwin" ;;
+    linux-x64)    triple="x86_64-unknown-linux-gnu" ;;
+    linux-arm64)  triple="aarch64-unknown-linux-gnu" ;;
+    *) echo "build-bundled: no standalone-python build for $os-$arch" >&2; return 1 ;;
+  esac
+
+  echo "==> Resolving standalone Python ($PBS_PYTHON_SERIES, $triple)"
+  local hdr=()
+  [[ -n "${GITHUB_TOKEN:-}" ]] && hdr=(-H "Authorization: Bearer $GITHUB_TOKEN")
+  local url
+  url="$(curl -fsSL ${hdr[@]+"${hdr[@]}"} \
+        "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest" \
+        | grep -o '"browser_download_url": *"[^"]*"' \
+        | sed -E 's/.*"(https[^"]+)".*/\1/' \
+        | grep -E "cpython-${PBS_PYTHON_SERIES//./\\.}\.[0-9].*-${triple}-install_only\.tar\.gz$" \
+        | head -1)"
+  [[ -n "$url" ]] || { echo "build-bundled: could not resolve a standalone Python for $triple (series $PBS_PYTHON_SERIES)" >&2; return 1; }
+
+  echo "==> Downloading $(basename "$url")"
+  local tmp; tmp="$(mktemp -d)"
+  curl -fsSL "$url" -o "$tmp/python.tar.gz"
+  tar xzf "$tmp/python.tar.gz" -C "$tmp"          # extracts to $tmp/python
+  rm -rf "$dest/python"
+  mv "$tmp/python" "$dest/python"
+  rm -rf "$tmp"
+
+  echo "==> Installing mkdocs-techdocs-core into embedded Python"
+  "$dest/python/bin/python3" -m ensurepip --upgrade >/dev/null 2>&1 || true
+  "$dest/python/bin/python3" -m pip install --quiet --disable-pip-version-check \
+    --upgrade pip mkdocs-techdocs-core
+
+  # Path-independent wrapper: Backstage spawns the literal `mkdocs` binary, so we
+  # expose one that calls the embedded interpreter via `-m mkdocs` (no absolute
+  # shebang, survives being unzipped to any path).
+  mkdir -p "$dest/python-bin"
+  cat > "$dest/python-bin/mkdocs" <<'WRAP'
+#!/bin/sh
+DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+exec "$DIR/../python/bin/python3" -m mkdocs "$@"
+WRAP
+  chmod +x "$dest/python-bin/mkdocs"
+  "$dest/python-bin/mkdocs" --version >/dev/null || { echo "build-bundled: embedded mkdocs failed to run" >&2; return 1; }
+}
+
+if [[ "$DO_TECHDOCS" -eq 1 ]]; then
+  echo "==> Building self-contained TechDocs variant (devhub-bundled-techdocs-$TARGET)"
+  TD_BUNDLE="$OUT/devhub-bundled-techdocs-$TARGET"
+  rm -rf "$TD_BUNDLE"
+  cp -R "$BUNDLE" "$TD_BUNDLE"
+  embed_standalone_python "$TD_BUNDLE" "$OS" "$ARCH"
+  # Note the self-contained nature in the bundled README.
+  cat >> "$TD_BUNDLE/README.txt" <<EOF
+
+This is the self-contained TechDocs build: it embeds a standalone Python runtime
+with mkdocs (under ./python) so generating documentation works with no host Python
+and no network access. It is larger than the standard bundle for that reason.
+EOF
+  if [[ "$DO_ZIP" -eq 1 ]]; then
+    echo "==> Zipping techdocs variant"
+    ( cd "$OUT" && rm -f "devhub-bundled-techdocs-$TARGET.zip" \
+        && zip -qry "devhub-bundled-techdocs-$TARGET.zip" "devhub-bundled-techdocs-$TARGET" )
+    echo "==> Wrote $OUT/devhub-bundled-techdocs-$TARGET.zip"
+  fi
+  echo "==> Done: $TD_BUNDLE"
+  echo "    files: $(find "$TD_BUNDLE" -type f | wc -l | tr -d ' ')"
+fi
