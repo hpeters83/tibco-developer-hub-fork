@@ -191,9 +191,15 @@ if ($TechDocs) {
   $rel = Invoke-RestMethod -Headers $hdr `
     'https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest'
   $seriesRe = [regex]::Escape($PbsPythonSeries)
+  # Prefer 'install_only_stripped' (debug symbols removed, much smaller); fall back to plain.
   $asset = $rel.assets |
-    Where-Object { $_.name -match "cpython-$seriesRe\.\d.*-$triple-install_only\.tar\.gz$" } |
+    Where-Object { $_.name -match "cpython-$seriesRe\.\d.*-$triple-install_only_stripped\.tar\.gz$" } |
     Select-Object -First 1
+  if (-not $asset) {
+    $asset = $rel.assets |
+      Where-Object { $_.name -match "cpython-$seriesRe\.\d.*-$triple-install_only\.tar\.gz$" } |
+      Select-Object -First 1
+  }
   if (-not $asset) { throw "could not resolve a standalone Python for $triple (series $PbsPythonSeries)" }
 
   Write-Host "==> Downloading $($asset.name)"

@@ -178,13 +178,17 @@ embed_standalone_python() {
   echo "==> Resolving standalone Python ($PBS_PYTHON_SERIES, $triple)"
   local hdr=()
   [[ -n "${GITHUB_TOKEN:-}" ]] && hdr=(-H "Authorization: Bearer $GITHUB_TOKEN")
+  # Prefer the 'install_only_stripped' asset: same runtime with debug symbols removed.
+  # It's dramatically smaller on Linux (libpython .so ships unstripped otherwise:
+  # ~208 MB vs ~20 MB). Fall back to plain 'install_only' if stripped isn't published.
+  local json
+  json="$(curl -fsSL ${hdr[@]+"${hdr[@]}"} \
+          "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest" \
+          | grep -o '"browser_download_url": *"[^"]*"' \
+          | sed -E 's/.*"(https[^"]+)".*/\1/')"
   local url
-  url="$(curl -fsSL ${hdr[@]+"${hdr[@]}"} \
-        "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest" \
-        | grep -o '"browser_download_url": *"[^"]*"' \
-        | sed -E 's/.*"(https[^"]+)".*/\1/' \
-        | grep -E "cpython-${PBS_PYTHON_SERIES//./\\.}\.[0-9].*-${triple}-install_only\.tar\.gz$" \
-        | head -1)"
+  url="$(echo "$json" | grep -E "cpython-${PBS_PYTHON_SERIES//./\\.}\.[0-9].*-${triple}-install_only_stripped\.tar\.gz$" | head -1)"
+  [[ -n "$url" ]] || url="$(echo "$json" | grep -E "cpython-${PBS_PYTHON_SERIES//./\\.}\.[0-9].*-${triple}-install_only\.tar\.gz$" | head -1)"
   [[ -n "$url" ]] || { echo "build-bundled: could not resolve a standalone Python for $triple (series $PBS_PYTHON_SERIES)" >&2; return 1; }
 
   echo "==> Downloading $(basename "$url")"
