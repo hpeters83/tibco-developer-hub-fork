@@ -89,11 +89,18 @@ Write-Host ''
 # --- 1. build ----------------------------------------------------------------
 if (-not $SkipBuild) {
   Write-Host "==> [1/3] Building Windows bundle(s)"
-  $buildArgs = @()
-  if ($SkipInstall) { $buildArgs += '-SkipInstall' }
-  if (-not $NoTechDocs) { $buildArgs += '-TechDocs' }
-  & (Join-Path $PortableDir 'scripts\build-bundled.ps1') @buildArgs
-  if ($LASTEXITCODE -ne 0) { Die "build-bundled.ps1 failed (exit $LASTEXITCODE)." }
+  # Use HASHTABLE splatting for the switches — array splatting an element like
+  # '-TechDocs' does NOT reliably bind a [switch] parameter, which previously caused
+  # the TechDocs variant to silently not build. A .ps1 invoked with & doesn't set its
+  # own $LASTEXITCODE, so rely on ErrorActionPreference='Stop' (try/catch) instead.
+  $buildParams = @{}
+  if ($SkipInstall)     { $buildParams['SkipInstall'] = $true }
+  if (-not $NoTechDocs) { $buildParams['TechDocs'] = $true }
+  try {
+    & (Join-Path $PortableDir 'scripts\build-bundled.ps1') @buildParams
+  } catch {
+    Die "build-bundled.ps1 failed: $($_.Exception.Message)"
+  }
 } else {
   Write-Host "==> [1/3] Skipping build (-SkipBuild)"
 }
@@ -129,24 +136,30 @@ if (-not $NoTag) {
 }
 
 # --- 3. publish (create, or upload to an existing release) -------------------
+# Pass the file paths to gh as a plain array ($zipPaths, NOT @zipPaths). For native
+# commands PowerShell auto-expands array elements into separate arguments; splatting
+# with @ here previously resulted in nothing being uploaded.
 Write-Host "==> [3/3] Publishing to GitHub"
-$zipPaths = $zips | ForEach-Object { $_.FullName }
+$zipPaths = @($zips | ForEach-Object { $_.FullName })
+Write-Host ("    uploading: " + ($zipPaths -join ', '))
 
 & gh release view $Version --repo $Repo *> $null
-if ($LASTEXITCODE -eq 0) {
+$releaseExists = ($LASTEXITCODE -eq 0)
+if ($releaseExists) {
   # Release exists — add/replace the Windows assets.
   Write-Host "    release $Version exists — uploading Windows zip(s) with --clobber"
-  & gh release upload $Version @zipPaths --repo $Repo --clobber
-  if ($LASTEXITCODE -ne 0) { Die "gh release upload failed." }
+  & gh release upload $Version $zipPaths --repo $Repo --clobber
+  if ($LASTEXITCODE -ne 0) { Die "gh release upload failed (exit $LASTEXITCODE)." }
 } else {
   # Release doesn't exist — create it with the Windows assets.
   Write-Host "    creating release $Version"
-  $ghArgs = @('release', 'create', $Version) + $zipPaths + @('--repo', $Repo, '--title', $Title, '--notes', $Notes)
-  if ($Target)    { $ghArgs += @('--target', $Target) }
-  if ($NotLatest) { $ghArgs += '--latest=false' } else { $ghArgs += '--latest' }
-  & gh @ghArgs
-  if ($LASTEXITCODE -ne 0) { Die "gh release create failed." }
+  $createArgs = @('release', 'create', $Version) + $zipPaths + @('--repo', $Repo, '--title', $Title, '--notes', $Notes)
+  if ($Target)    { $createArgs += @('--target', $Target) }
+  if ($NotLatest) { $createArgs += '--latest=false' } else { $createArgs += '--latest' }
+  & gh $createArgs
+  if ($LASTEXITCODE -ne 0) { Die "gh release create failed (exit $LASTEXITCODE)." }
 }
 
 Write-Host ''
 Write-Host "==> Done. Published $Version to $Repo."
+Write-Host "    verify: gh release view $Version --repo $Repo --json assets --jq '.assets[].name'"
