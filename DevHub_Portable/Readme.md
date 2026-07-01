@@ -165,5 +165,4 @@ On macOS, if it's blocked, run `xattr -cr .` in the folder first.
 
 ---
 
-That's it — one download, one command, and you've got a local TIBCO Developer Hub. For
-build details and configuration internals, see [`README.md`](./README.md).
+That's it — one download, one command, and you've got a local TIBCO Developer Hub.
