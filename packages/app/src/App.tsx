@@ -11,6 +11,9 @@ import {
 } from '@backstage/plugin-catalog';
 import { ScaffolderPage, scaffolderPlugin } from '@backstage/plugin-scaffolder';
 import { orgPlugin } from '@backstage/plugin-org';
+import { ApiExplorerPage } from '@backstage/plugin-api-docs';
+import { CatalogEntityPage, CatalogIndexPage } from '@backstage/plugin-catalog';
+import { ScaffolderPage } from '@backstage/plugin-scaffolder';
 import { SearchPage } from '@backstage/plugin-search';
 import {
   DefaultTechDocsHome,
@@ -30,7 +33,11 @@ import {
   ErrorPanel,
   OAuthRequestDialog,
 } from '@backstage/core-components';
-import { createApp } from '@backstage/app-defaults';
+import { createApp } from '@backstage/frontend-defaults';
+import {
+  convertLegacyAppOptions,
+  convertLegacyAppRoot,
+} from '@backstage/core-compat-api';
 import {
   AppRouter,
   ErrorBoundaryFallbackProps,
@@ -52,6 +59,7 @@ import { SignInPage } from '@backstage/core-components';
 
 import { tibcoThemeLight } from './themes/tibcoThemeLight';
 import { settingsPage } from './components/settings/settings';
+import { CatalogImportPage } from './components/catalog-import/CatalogImportPage';
 import { Button } from '@material-ui/core';
 import { UnifiedThemeProvider } from '@backstage/theme';
 import { CustomTemplatePage } from '@internal/backstage-plugin-custom-template-flow';
@@ -59,8 +67,7 @@ import {
   DataplaneSelectorExtension,
   CapabilitySelectorExtension,
 } from '@internal/plugin-tibco-platform-custom-form-fields';
-import { catalogMessages } from './translations/catalogIndex';
-import { coreComponentsMessages } from './translations/coreComponentsMessages';
+import { catalogTranslations } from './translations/catalogIndex';
 import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import {
   TemplateGroups,
@@ -116,7 +123,8 @@ const DefaultErrorBoundaryFallback = ({
   );
 };
 
-const app = createApp({
+const convertedOptionsModule = convertLegacyAppOptions({
+  /* legacy options such as apis, icons, plugins, components, themes and featureFlags */
   apis,
   components: {
     SignInPage: props => {
@@ -165,7 +173,7 @@ const app = createApp({
   themes: [
     {
       id: 'tibco-theme',
-      title: 'TIBCO Theme',
+      title: 'TIBCO Light',
       variant: 'light',
       icon: <LightIcon />,
       Provider: ({ children }) => (
@@ -361,7 +369,8 @@ export const routes = (
     <Route path="/integration-topology" element={<IntegrationTopologyPage />} />
   </FlatRoutes>
 );
-export default app.createRoot(
+
+const convertedRootFeatures = convertLegacyAppRoot(
   <>
     <AlertDisplay />
     <OAuthRequestDialog />
@@ -370,3 +379,13 @@ export default app.createRoot(
     </AppRouter>
   </>,
 );
+
+const app = createApp({
+  features: [
+    convertedOptionsModule,
+    ...convertedRootFeatures,
+    catalogTranslations,
+  ],
+});
+
+export default app.createRoot();
