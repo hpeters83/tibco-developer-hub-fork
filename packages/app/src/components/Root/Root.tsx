@@ -34,7 +34,7 @@ import ImportFlowIcon from '../../icons/importflow.svg';
 import DocumentsIcon from '../../icons/documents.svg';
 import SelfServiceIcon from '../../icons/selfservice.svg';
 import TemplatesIcon from '../../icons/templates.svg';
-import RegisterIcon from '../../icons/register.svg';
+// import RegisterIcon from '../../icons/register.svg';
 import { useAdvancedView } from '../settings/CustomAppearanceCard.tsx';
 import { ThemeCSSVars } from './ThemeCSSVars';
 
@@ -544,40 +544,22 @@ const SidebarCustom = ({
           to="docs"
           text="Documents"
         />
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          icon={() => (
-            <img src={MarketplaceIcon} height={24} width={24} alt="logo" />
-          )}
-          onClick={() => setCpClicked(false)}
-          to="marketplace"
-          text="Marketplace"
-        />
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          onClick={() => setCpClicked(false)}
-          icon={() => <TibcoIcon iconName="pl-icon-add-circle" />}
-          to="create"
-          text="Develop..."
-        />
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          onClick={() => setCpClicked(false)}
-          icon={() => (
-            <img src={SelfServiceIcon} height={24} width={24} alt="logo" />
-          )}
-          to="self-service-flow"
-          text="Self Service"
-        />
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          onClick={() => setCpClicked(false)}
-          icon={() => (
-            <img src={ImportFlowIcon} height={24} width={24} alt="logo" />
-          )}
-          to="import-flow"
-          text="Import..."
-        />
+        {/*<SidebarItem*/}
+        {/*  className={cpClicked ? classes.itemNotSelected : ''}*/}
+        {/*  icon={() => (*/}
+        {/*    <img src={MarketplaceIcon} height={24} width={24} alt="logo" />*/}
+        {/*  )}*/}
+        {/*  onClick={() => setCpClicked(false)}*/}
+        {/*  to="marketplace"*/}
+        {/*  text="Marketplace"*/}
+        {/*/>*/}
+        {/*<SidebarItem*/}
+        {/*  className={cpClicked ? classes.itemNotSelected : ''}*/}
+        {/*  onClick={() => setCpClicked(false)}*/}
+        {/*  icon={() => <TibcoIcon iconName="pl-icon-add-circle" />}*/}
+        {/*  to="create"*/}
+        {/*  text="Develop..."*/}
+        {/*/>*/}
         {/*<SidebarItem*/}
         {/*  className={cpClicked ? classes.itemNotSelected : ''}*/}
         {/*  onClick={() => setCpClicked(false)}*/}
@@ -589,15 +571,8 @@ const SidebarCustom = ({
         {/*/>*/}
         {/* End global nav */}
       </SidebarGroup>
-      <SidebarDivider className={classes.divider} />
+      {/*<SidebarDivider className={classes.divider} />*/}
       <SidebarGroup>
-        <SidebarItem
-          className={cpClicked ? classes.itemNotSelected : ''}
-          onClick={() => setCpClicked(false)}
-          icon={() => <TibcoIcon iconName="pl-icon-info" />}
-          to="/docs/default/system/learn-more"
-          text="Learn More..."
-        />
         {!isAdvancedView ? (
           <SidebarItem
             className={cpClicked ? classes.itemNotSelected : ''}
@@ -648,19 +623,27 @@ const SidebarCustom = ({
               to="create/tasks"
               text="Task list"
             />
-            <SidebarItem
-              className={cpClicked ? classes.itemNotSelected : ''}
-              onClick={() => setCpClicked(false)}
-              icon={() => (
-                <img src={RegisterIcon} height={24} width={24} alt="logo" />
-              )}
-              to="catalog-import"
-              text="Register..."
-            />
+            {/*<SidebarItem*/}
+            {/*  className={cpClicked ? classes.itemNotSelected : ''}*/}
+            {/*  onClick={() => setCpClicked(false)}*/}
+            {/*  icon={() => (*/}
+            {/*    <img src={RegisterIcon} height={24} width={24} alt="logo" />*/}
+            {/*  )}*/}
+            {/*  to="catalog-import"*/}
+            {/*  text="Register..."*/}
+            {/*/>*/}
           </div>
         )}
         {/* End global nav */}
       </SidebarGroup>
+      <SidebarDivider className={classes.divider} />
+      <SidebarItem
+        className={cpClicked ? classes.itemNotSelected : ''}
+        onClick={() => setCpClicked(false)}
+        icon={() => <TibcoIcon iconName="pl-icon-info" />}
+        to="/docs/default/system/learn-more"
+        text="Learn More..."
+      />
       <SidebarDivider className={classes.divider} />
       <SidebarGroup>
         <SidebarItem

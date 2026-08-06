@@ -17,7 +17,7 @@
 # The build, the marketplace TechDocs links, and the API entity `servers` URLs all
 # assume the app lives under /tibco/hub. The reverse proxy strips that prefix before
 # forwarding to the backend (which serves at root).
-define: &docUrl https://docs.tibco.com/go/platform-cp/1.17.0/doc/html#cshid=developer_hub_overview
+define: &docUrl https://docs.tibco.com/go/platform-cp/1.19.0/doc/html#cshid=developer_hub_overview
 app:
   title: TIBCO® Developer Hub
   # Must equal backend.baseUrl when using the `app-backend` plugin (single origin).
@@ -27,7 +27,7 @@ app:
   # Show the deployed version in the sidebar footer (bottom-left). Read by
   # Root.tsx → renders "Version : <value>". Unlike showBuildVersion (homepage),
   # this is gated only by the key being set.
-  developerHubVersion: '1.18.0'
+  developerHubVersion: '1.19.0'
   support:
     url: https://support.tibco.com/s/
     items:

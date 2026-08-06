@@ -4,21 +4,12 @@
 
 import { Route } from 'react-router';
 import { ApiExplorerPage } from '@backstage/plugin-api-docs';
-import {
-  CatalogEntityPage,
-  CatalogIndexPage,
-  catalogPlugin,
-} from '@backstage/plugin-catalog';
-import { ScaffolderPage, scaffolderPlugin } from '@backstage/plugin-scaffolder';
-import { orgPlugin } from '@backstage/plugin-org';
-import { ApiExplorerPage } from '@backstage/plugin-api-docs';
 import { CatalogEntityPage, CatalogIndexPage } from '@backstage/plugin-catalog';
 import { ScaffolderPage } from '@backstage/plugin-scaffolder';
 import { SearchPage } from '@backstage/plugin-search';
 import {
   DefaultTechDocsHome,
   TechDocsIndexPage,
-  techdocsPlugin,
   TechDocsReaderPage,
 } from '@backstage/plugin-techdocs';
 import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
@@ -59,7 +50,7 @@ import { SignInPage } from '@backstage/core-components';
 
 import { tibcoThemeLight } from './themes/tibcoThemeLight';
 import { settingsPage } from './components/settings/settings';
-import { CatalogImportPage } from './components/catalog-import/CatalogImportPage';
+// import { CatalogImportPage } from './components/catalog-import/CatalogImportPage';
 import { Button } from '@material-ui/core';
 import { UnifiedThemeProvider } from '@backstage/theme';
 import { CustomTemplatePage } from '@internal/backstage-plugin-custom-template-flow';
@@ -152,23 +143,6 @@ const convertedOptionsModule = convertLegacyAppOptions({
       return <SignInPage {...props} providers={availableProviders} />;
     },
     ErrorBoundaryFallback: DefaultErrorBoundaryFallback,
-  },
-  __experimentalTranslations: {
-    availableLanguages: ['en'],
-    resources: [catalogMessages, coreComponentsMessages],
-  },
-  bindRoutes({ bind }) {
-    bind(catalogPlugin.externalRoutes, {
-      createComponent: scaffolderPlugin.routes.root,
-      viewTechDoc: techdocsPlugin.routes.docRoot,
-      createFromTemplate: scaffolderPlugin.routes.selectedTemplate,
-    });
-    bind(scaffolderPlugin.externalRoutes, {
-      viewTechDoc: techdocsPlugin.routes.docRoot,
-    });
-    bind(orgPlugin.externalRoutes, {
-      catalogIndex: catalogPlugin.routes.catalogIndex,
-    });
   },
   themes: [
     {
