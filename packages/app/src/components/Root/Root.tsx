@@ -10,9 +10,11 @@ import {
   sidebarConfig,
   SidebarDivider,
   SidebarGroup,
+  SidebarGroupProps,
   SidebarItem,
   SidebarPage,
   useSidebarOpenState,
+  useSidebarPinState,
 } from '@backstage/core-components';
 import MenuIcon from '@material-ui/icons/Menu';
 import CategoryIcon from '@material-ui/icons/Category';
@@ -216,6 +218,13 @@ const useSidebarStyles = makeStyles(theme => ({
     display: 'flex',
     flexDirection: 'column',
   },
+  // In the mobile overlay drawer the sidebar is not a fixed-height column, so the
+  // absolutely positioned version footer would float on top of the nav items.
+  versionContainerMobile: {
+    position: 'static',
+    width: 'auto',
+    padding: '16px 8px 8px',
+  },
   itemSelected: {
     backgroundColor: `${theme.palette.primary.main} !important`,
   },
@@ -380,9 +389,34 @@ const SecondarySidebar = ({
     </div>
   );
 };
+/**
+ * Mobile-aware replacement for `SidebarGroup`.
+ *
+ * On small screens Backstage swaps the `Sidebar` for a `MobileSidebar`: a bottom
+ * navigation bar whose tabs are the top-level `SidebarGroup`s, with the tapped
+ * group's children shown in an overlay drawer. Because our whole nav lives inside
+ * the `SidebarCustom` component, `MobileSidebar` cannot see any `SidebarGroup`
+ * among its own direct children, so it wraps everything in one default "Menu"
+ * group. Every nested `SidebarGroup` then still renders itself as an icon-only
+ * `BottomNavigationAction` and DROPS its children — which is why the mobile menu
+ * showed only a search icon, a stray hamburger and "Learn More...".
+ *
+ * Grouping only ever mattered for the mobile bottom bar, and that path is already
+ * unreachable here, so on mobile we render the group's children inline instead.
+ * Desktop behaviour is unchanged.
+ */
+const NavGroup = ({ children, ...groupProps }: SidebarGroupProps) => {
+  const { isMobile } = useSidebarPinState();
+  if (isMobile) {
+    return <>{children}</>;
+  }
+  return <SidebarGroup {...groupProps}>{children}</SidebarGroup>;
+};
+
 const SidebarLogo = () => {
   const classes = useSidebarLogoStyles();
   const { isOpen, setOpen } = useSidebarOpenState();
+  const { isMobile } = useSidebarPinState();
   return (
     <div
       className={
@@ -393,16 +427,22 @@ const SidebarLogo = () => {
     >
       <SidebarItem
         className={classes.logo}
-        icon={() => (
-          <div className={classes.menuIcon}>
-            <TibcoIcon
-              height={24}
-              width={24}
-              iconName="pl-icon-menu-hamburger"
-              onClick={() => setOpen(!isOpen)}
-            />
-          </div>
-        )}
+        icon={
+          // The collapse toggle is dead weight on mobile: the overlay drawer forces
+          // the sidebar open and stubs out setOpen, so tapping it does nothing.
+          isMobile
+            ? () => <></>
+            : () => (
+                <div className={classes.menuIcon}>
+                  <TibcoIcon
+                    height={24}
+                    width={24}
+                    iconName="pl-icon-menu-hamburger"
+                    onClick={() => setOpen(!isOpen)}
+                  />
+                </div>
+              )
+        }
       >
         <Link to="/">
           <img src={DevHubLogo} className={classes.img} alt="logo" />
@@ -421,6 +461,7 @@ const SidebarCustom = ({
 }) => {
   const classes = useSidebarStyles();
   const { isOpen } = useSidebarOpenState();
+  const { isMobile } = useSidebarPinState();
   const config = useApi(configApiRef);
   const errorApi = useApi(errorApiRef);
   const identityApi = useApi(identityApiRef);
@@ -467,15 +508,15 @@ const SidebarCustom = ({
       }
     >
       <SidebarLogo />
-      <SidebarGroup
+      <NavGroup
         label="Search"
         icon={<TibcoIcon iconName="pl-icon-search" />}
         to="/search"
       >
         <SidebarSearchModal />
-      </SidebarGroup>
+      </NavGroup>
       <SidebarDivider className={classes.divider} />
-      <SidebarGroup label="Menu" icon={<MenuIcon />}>
+      <NavGroup label="Menu" icon={<MenuIcon />}>
         {/* Global nav, not org-specific */}
 
         <SidebarItem
@@ -570,9 +611,9 @@ const SidebarCustom = ({
         {/*  text="Register..."*/}
         {/*/>*/}
         {/* End global nav */}
-      </SidebarGroup>
+      </NavGroup>
       {/*<SidebarDivider className={classes.divider} />*/}
-      <SidebarGroup>
+      <NavGroup>
         {!isAdvancedView ? (
           <SidebarItem
             className={cpClicked ? classes.itemNotSelected : ''}
@@ -635,7 +676,7 @@ const SidebarCustom = ({
           </div>
         )}
         {/* End global nav */}
-      </SidebarGroup>
+      </NavGroup>
       <SidebarDivider className={classes.divider} />
       <SidebarItem
         className={cpClicked ? classes.itemNotSelected : ''}
@@ -645,7 +686,7 @@ const SidebarCustom = ({
         text="Learn More..."
       />
       <SidebarDivider className={classes.divider} />
-      <SidebarGroup>
+      <NavGroup>
         <SidebarItem
           className={cpClicked ? classes.itemNotSelected : ''}
           onClick={() => setCpClicked(false)}
@@ -658,7 +699,13 @@ const SidebarCustom = ({
           text="Sign out"
           onClick={() => redirectToCP()}
         />
-        <div className={classes.versionContainer}>
+        <div
+          className={
+            isMobile
+              ? `${classes.versionContainer} ${classes.versionContainerMobile}`
+              : classes.versionContainer
+          }
+        >
           <div>
             {developerHubVersion ? `Version : ${developerHubVersion}` : ''}
           </div>
@@ -668,7 +715,7 @@ const SidebarCustom = ({
               : ''}
           </div>
         </div>
-      </SidebarGroup>
+      </NavGroup>
     </div>
   );
 };
