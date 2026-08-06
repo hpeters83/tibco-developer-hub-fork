@@ -7,14 +7,15 @@ description: Create or replace a Backstage theme in this Developer Hub app, with
 
 Add a new Backstage theme to this Developer Hub repo (or replace the default TIBCO one), with an optional custom logo and "Developer Hub" subtitle.
 
-## Canonical templates
+## Canonical template
 
-Two working themes already in the repo are the source of truth for structure. Read at least one fully before generating a new file so your output matches the exact API surface:
+**`packages/app/src/themes/tibcoThemeLight.ts` is the only theme in the repo** and the single source of truth for structure. Read it fully before generating a new file so your output matches the exact API surface.
 
-- Light template: `packages/app/src/themes/acmeThemeLight.ts`
-- Dark template: `packages/app/src/themes/acmeThemeDark.ts`
+It uses `createUnifiedTheme` + `createBaseThemeOptions` + `palettes.light` + `genPageTheme` from `@backstage/theme`. Don't invent a different builder.
 
-Both use `createUnifiedTheme` + `createBaseThemeOptions` + `palettes.light` / `palettes.dark` + `genPageTheme` from `@backstage/theme`. Don't invent a different builder.
+**No dark theme ships in this repo.** If the user wants a dark variant you derive it from the light file — same structure, `palettes.dark` instead of `palettes.light`, and the color guidance in step 2. There is no dark template to copy from.
+
+Note how the file is written today: colors are **inline hex literals** with explanatory trailing comments (`main: '#1774e5', // Changes inactive, clickable links, buttons, icons`), not named constants. Keep the comments as a map of what each knob drives, but do **not** copy the inline-literal style into your new file — see step 2.
 
 ## Workflow
 
@@ -34,7 +35,9 @@ Ask in a single tool call. Use multi-select where useful. Always offer "Other" f
 
 Path: `packages/app/src/themes/<slug>ThemeLight.ts` (and/or `<slug>ThemeDark.ts`).
 
-Copy structure verbatim from the relevant template (`acmeThemeLight.ts` / `acmeThemeDark.ts`) and retarget every color. Put palette tokens as `const`s at the top of the file:
+Copy the structure verbatim from `tibcoThemeLight.ts` — the same `createUnifiedTheme({ ...createBaseThemeOptions({ palette }), defaultPageTheme, fontFamily, pageTheme, components })` shape — and retarget every color.
+
+`tibcoThemeLight.ts` writes its colors as inline hex literals. **Your new file should not.** Hoist them into named `const`s at the top and reference those throughout, so a rebrand is a handful of edits rather than a find-and-replace across 360 lines:
 
 ```ts
 const BRAND_PRIMARY = '#...';
@@ -44,7 +47,7 @@ const BRAND_TEXT_PRIMARY = '#...';
 // etc.
 ```
 
-Replace every occurrence of the template's `ACME_*` constants with your `BRAND_*` constants. No raw hex literals scattered through component overrides — they should all reference the named tokens at the top.
+Every TIBCO hex in the source (`#1774e5`, `#0e4f9e`, `#0E2D65`, `#565a6e`, …) maps to one of your tokens. When you are done, no raw hex literal should remain in the palette or in the component overrides — they should all reference a named token at the top. The status colors (`error` `#db0000`, `warning` `#fab632`, `info` `#a160fb`, `success` `#039145`) are semantic rather than brand; carry them over unchanged unless the user asks otherwise, but still name them.
 
 Dark variant guidance:
 - Base on `palettes.dark` (not `palettes.light`).
@@ -97,31 +100,47 @@ Asset path: `packages/app/src/components/Root/images/<slug>-logo.<ext>`.
 - **Local path source**: copy the file with `cp`.
 - **None**: skip this step entirely; the default DevHub logo continues to show.
 
-Then edit `packages/app/src/components/Root/Root.tsx`:
+Then edit `packages/app/src/components/Root/Root.tsx`. **Read the file first** — the descriptions below are the shape it has today, and it is a 600-line file with several unrelated `makeStyles` blocks.
 
-1. Add the asset import next to the existing `AcmeLogo` import:
+What is actually there:
+
+- A single unconditional logo import near the other asset imports: `import DevHubLogo from './images/devhub-logo.svg';`
+- `useSidebarLogoStyles` — classes `logoContainer`, `logoContainerClosed`, `logo`, `menuIcon`, `img` (`img` is just `{ height: '45px' }`)
+- The `SidebarLogo` component, which renders a hamburger `TibcoIcon` as the `SidebarItem` icon and, as its child, `<Link to="/"><img src={DevHubLogo} className={classes.img} alt="logo" /></Link>`
+
+There is **no theme-aware logo swap and no subtitle** in the file — you are adding both, not extending an existing mechanism.
+
+1. Add the asset import next to the existing `DevHubLogo` import:
    ```ts
    import <Slug>Logo from './images/<slug>-logo.<ext>';
    ```
-2. `appThemeApiRef` is already imported from `@backstage/core-plugin-api`. The active-theme subscription already exists in `SidebarLogo` — extend it. The existing pattern:
+2. **Replace TIBCO** — the simple case, and the default when only one theme is registered. Point the existing `<img>` at the new asset and stop. No API subscription, no branching.
+3. **Add alongside TIBCO** — the logo now has to follow the active theme. `useApi` is already imported from `@backstage/core-plugin-api`; add `appThemeApiRef` to that same import and subscribe inside `SidebarLogo`:
    ```ts
-   const isAcme = themeId === 'acme-light' || themeId === 'acme-dark';
+   const appThemeApi = useApi(appThemeApiRef);
+   const [themeId, setThemeId] = useState(appThemeApi.getActiveThemeId());
+   useEffect(() => {
+     const sub = appThemeApi.activeThemeId$().subscribe(setThemeId);
+     return () => sub.unsubscribe();
+   }, [appThemeApi]);
+
+   const is<Slug> = themeId === '<slug>-light' || themeId === '<slug>-dark';
    ```
-   Add a sibling check for your theme IDs, e.g.:
+   `useState` and `useEffect` are already imported at the top of the file. Then pick the asset: `const logoSrc = is<Slug> ? <Slug>Logo : DevHubLogo;` and render `<img src={logoSrc} … />`.
+4. **Subtitle requested** — add three classes to `useSidebarLogoStyles` (they do not exist yet) and render a stack in place of the bare `<img>`:
    ```ts
-   const isCustomerX = themeId === 'customer-x-light' || themeId === 'customer-x-dark';
+   logoStack: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
+   logoImg: { height: '38px' },
+   logoText: { fontSize: '12px', letterSpacing: '0.04em', opacity: 0.85 },
    ```
-   Then expand the JSX to pick the right logo + subtitle for each branch.
-3. **Subtitle requested**: render the stack pattern (already in the file as `acmeLogoStack` / `acmeLogoImg` / `acmeLogoText`):
    ```tsx
-   <div className={classes.acmeLogoStack}>
-     <img src={<Slug>Logo} className={classes.acmeLogoImg} alt="logo" />
-     <span className={classes.acmeLogoText}>{subtitle}</span>
+   <div className={classes.logoStack}>
+     <img src={logoSrc} className={classes.logoImg} alt="logo" />
+     <span className={classes.logoText}>{subtitle}</span>
    </div>
    ```
-4. **No subtitle**: render a single `<img>` with `classes.img` so it matches the existing single-image flow.
-
-If "Replace TIBCO" was chosen and the user wants the new logo to be the default, you can simplify: just point `<img src={...}>` at the new asset unconditionally and drop the theme-ID checks for the logo branch. Confirm with the user first.
+   Keep it inside the existing `<Link to="/">`. Don't render the subtitle in the collapsed sidebar — `isOpen` from `useSidebarOpenState()` is already in scope in `SidebarLogo`.
+5. **No subtitle**: leave the single `<img className={classes.img}>` flow as it is; only the `src` changes.
 
 ### 5. Type-check
 

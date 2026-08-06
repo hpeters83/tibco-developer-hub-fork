@@ -22,11 +22,28 @@ Two-phase end-to-end test for TIBCO Developer Hub import flow templates.
 ## Key facts
 
 - **Dry-run endpoint**: `POST http://127.0.0.1:7007/api/scaffolder/v2/dry-run`
+- **MCP first (Developer Hub 1.19).** The scaffolder is exposed over MCP, so the whole
+  submit-and-poll dance is three typed calls instead of hand-rolled HTTP:
+  - `scaffolder.dry-run-template` — `{ templateYaml, values, files }` → `{ valid, errors, log, steps }`.
+    Phase 1's structure check. Note it returns **no rendered files**; it is a validity gate, not a render.
+  - `scaffolder.execute-template` — `{ templateRef, values, secrets }` → `{ taskId }`. The live run.
+    **Side-effecting** — summarise what it will do and get the user's confirmation before calling it.
+  - `scaffolder.get-scaffolder-task-logs` — `{ taskId, after? }` → `{ events: [{ id, createdAt, type, body }] }`.
+    Poll with `after` set to the last event id you saw to tail the run.
+  - `scaffolder.list-scaffolder-tasks` — recover a `taskId` you lost.
+  - `catalog.query-catalog-entities` — the registration check at the end.
+  See `MCP-TOOLS.md` for the endpoint and how to enable the server. **If MCP is off, use the REST
+  endpoints below** — the phases, checks and verdicts are identical, only the transport changes.
 - **Task submit endpoint**: `POST http://127.0.0.1:7007/api/scaffolder/v2/tasks`
 - **Task status endpoint**: `GET http://127.0.0.1:7007/api/scaffolder/v2/tasks/{id}`
 - **Catalog entity endpoint**: `GET http://127.0.0.1:7007/api/catalog/entities?filter=kind=<Kind>,metadata.name=<name>`
 - **Sandbox**: All localhost calls require `dangerouslyDisableSandbox: true`
 - **Import flows with dry-run**: `tibco:git:clone`, `tibco:extract-parameters`, and `tibco:git:push` are **not** dry-run-aware; they will attempt real execution and fail. This is expected and does not indicate a broken template.
+
+- **Scratch files**: helper scripts, dumps and intermediate JSON go under
+  `${TMPDIR:-/tmp}/devhub-skills/test-import-flow/` — `mkdir -p` it before the first write and remove it when the run
+  finishes. Don't write straight into `/tmp`: concurrent runs collide there, and a
+  published skill should not leave loose `.mjs` files in a shared directory.
 
 ## Workflow
 
@@ -67,7 +84,7 @@ Check `packages/backend/src/rootHttpRouterService.ts` — the root `express.json
 
 #### 2c. Run the dry-run
 
-Write the script below to `/tmp/test-import-flow-dry.mjs`, substituting `TEMPLATE_DIR`, `OUTPUT_DIR`, and `VALUES`. Run with `dangerouslyDisableSandbox: true`.
+Write the script below to `${TMPDIR:-/tmp}/devhub-skills/test-import-flow/test-import-flow-dry.mjs`, substituting `TEMPLATE_DIR`, `OUTPUT_DIR`, and `VALUES`. Run with `dangerouslyDisableSandbox: true`.
 
 ```js
 import { readFile, readdir, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -152,7 +169,7 @@ Explain to the user what the import flow will look for in the repo so they can p
 
 #### 3b. Submit the live scaffolder task
 
-Write `/tmp/run-import-flow.mjs` and run with `dangerouslyDisableSandbox: true`:
+Write `${TMPDIR:-/tmp}/devhub-skills/test-import-flow/run-import-flow.mjs` and run with `dangerouslyDisableSandbox: true`:
 
 ```js
 const ENDPOINT = 'http://127.0.0.1:7007/api/scaffolder/v2/tasks';
@@ -181,7 +198,7 @@ Save the task ID for polling.
 
 #### 3c. Poll for task completion
 
-Write `/tmp/poll-import-flow.mjs` and run with `dangerouslyDisableSandbox: true`:
+Write `${TMPDIR:-/tmp}/devhub-skills/test-import-flow/poll-import-flow.mjs` and run with `dangerouslyDisableSandbox: true`:
 
 ```js
 const TASK_ID = '<id from step 3b>';
@@ -250,7 +267,7 @@ Once the task completes successfully, query the catalog for the registered entit
 
 Determine the expected entity name from the template's extraction output. Since this is a live run, the extracted name came from the actual source files. Check the task events or the generated YAML file path for the entity name.
 
-Write `/tmp/verify-catalog.mjs` and run with `dangerouslyDisableSandbox: true`:
+Write `${TMPDIR:-/tmp}/devhub-skills/test-import-flow/verify-catalog.mjs` and run with `dangerouslyDisableSandbox: true`:
 
 ```js
 const BASE = 'http://127.0.0.1:7007/api/catalog/entities';

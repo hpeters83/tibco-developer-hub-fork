@@ -30,7 +30,7 @@ Ask in a single tool call where possible. Use multi-select for tags. Always offe
 - **Type** — `service` / `bwce` / `flogo` / `website` / `library` / Other. Goes into `spec.type`.
 - **Owner** — Backstage group ref (default `tibco-templates`). Goes into `spec.owner`.
 - **Tags** (multi-select) — `tibco`, `bwce`, `flogo`, `recommended`, `import-flow`, `devhub-marketplace`, plus Other. **Important:** tag choices change *where* the template appears:
-  - `import-flow` → only listed under `/import-flow` (filtered by `@internal/backstage-plugin-import-flow`)
+  - `import-flow` → only listed under `/import-flow` (filtered by `@internal/backstage-plugin-custom-template-flow`)
   - `devhub-marketplace` → only listed under `/marketplace`
   - Anything else (incl. plain `tibco`/`bwce`/`recommended`) → shown under `/create`
   - The `devhub-internal` tag suppresses a template from `/import-flow` even if it also has `import-flow`.
@@ -235,3 +235,16 @@ If the dev server isn't running, skip and tell the user to verify after `yarn st
 - Don't forget that `fetch:template` runs the skeleton through Nunjucks. Literal `${{ }}` or `{{ }}` in non-templated files (e.g. user-pasted code samples) needs `{% raw %}...{% endraw %}` fences or it'll fail at template time.
 - Don't add `{% raw %}` fences around Flogo JSON files — Flogo's own expression syntax (`$activity[...]`, `$loop[...]`, `=coerce.toFloat64(...)`) does not conflict with Nunjucks `${{...}}` syntax. Plain `${{values.name}}` substitutions work correctly inside `.flogo` JSON files.
 - Don't auto-restart `yarn start` yourself; ask the user to restart so they control their dev loop.
+
+## Developer Hub 1.19 — MCP shortcuts
+
+Three of the manual steps below have typed MCP equivalents on 1.19 (see `MCP-TOOLS.md`):
+
+- `scaffolder.list-scaffolder-actions` — the authoritative list of actions you may write in `steps:`.
+  Check against it instead of guessing an action name or copying one that no longer exists.
+- `catalog.validate-entity` — validate the `catalog-info.yaml` your skeleton emits *before* wiring the
+  template up, so a malformed entity fails at authoring time rather than on first run.
+- `scaffolder.dry-run-template` — a fast structural check of the finished template. It returns
+  `{ valid, errors, log, steps }` and **no rendered files**; use `/test-template` for the render.
+
+Everything else in this skill is file authoring and is unchanged from 1.18.
