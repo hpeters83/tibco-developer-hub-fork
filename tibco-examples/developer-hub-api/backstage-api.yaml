@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: catalog
+  title: TIBCO Developer Hub API (Pre 1.19)
   version: '1'
   description: |
     The API surface consists of a few distinct groups of functionality. Each has a
