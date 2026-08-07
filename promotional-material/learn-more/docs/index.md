@@ -1,24 +1,15 @@
-<!--
-  Internal links below use base-relative paths (../../../../<route>) on purpose.
-  This TechDoc is served at <app-base>/docs/default/system/learn-more, so four "../"
-  steps land back at the app root in BOTH local dev (base "/") and the hosted demo
-  (base "/tibco/hub"). TechDocs then intercepts the click and navigates the SPA.
-  External https:// links automatically open in a new tab.
--->
-
 # The TIBCO® Developer Hub
 
-<!--
-  The video is served by Caddy straight from the demo host (./media -> /srv/media),
-  NOT by TechDocs, so we use an ABSOLUTE path. TechDocs rewrites *relative* asset
-  URLs to its own storage API (which would 404 the video); absolute "/..." paths
-  are left untouched. This URL only resolves on the hosted demo (base /tibco/hub);
-  in local dev the video simply won't load, which is fine. See deploy/demo.
--->
-<video controls preload="metadata" width="100%" style="max-width:880px;border-radius:8px;display:block;margin:1.5rem auto;">
-  <source src="/tibco/hub/media/devhub-marketing.mp4" type="video/mp4">
-  Your browser does not support embedded video.
-</video>
+<div style="position:relative;padding-top:56.25%;max-width:880px;margin:1.5rem auto;">
+  <iframe
+    src="https://www.youtube.com/embed/bNzv4f4gUPw"
+    title="TIBCO® Developer Hub"
+    loading="lazy"
+    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:8px;"
+  ></iframe>
+</div>
+
+<p style="text-align:center;"><a href="https://www.youtube.com/watch?v=bNzv4f4gUPw">Watch on YouTube</a></p>
 
 Most development teams lose hours every week to the same problem: finding the assets
 they need. APIs live in one place, documentation in another, and nobody is quite sure
@@ -62,6 +53,13 @@ picture of your landscape without manual documentation.
 works with the wider ecosystem of community plugins and adapts to the tools your teams
 already rely on.
 
+## Impact of the TIBCO Developer Hub
+
+<video controls preload="metadata" width="100%" style="max-width:880px;border-radius:8px;display:block;margin:1.5rem auto;">
+  <source src="/tibco/hub/media/devhub-marketing.mp4" type="video/mp4">
+  Your browser does not support embedded video.
+</video>
+
 ## Part of the TIBCO Platform
 
 The Developer Hub is one piece of the broader TIBCO Platform, a unified foundation for
@@ -74,4 +72,3 @@ connecting, integrating, and managing your data and applications.
 
 - [Talk to us](https://www.tibco.com/contact-us) about your integration goals.
 - [Explore the open-source repository](https://github.com/TIBCOSoftware/tibco-developer-hub) to see how the Developer Hub is built.
-

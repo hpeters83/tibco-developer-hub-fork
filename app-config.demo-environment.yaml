@@ -64,6 +64,13 @@ backend:
     host: 0.0.0.0
   csp:
     connect-src: ["'self'", 'http:', 'https:']
+    # Required for the YouTube embed on the Learn More TechDoc page. Backstage builds
+    # its CSP from helmet's defaults, which define no frame-src at all — so framing
+    # falls back to default-src 'self' and any external <iframe> is blocked by the
+    # browser. Listing the directive here is additive: helmet's other defaults stay.
+    # This only permits framing YouTube; it does not let anyone frame the Hub (that
+    # is frame-ancestors, still 'self').
+    frame-src: ["'self'", 'https://www.youtube.com']
   # In-memory database — ephemeral by design.
   database:
     client: better-sqlite3
@@ -102,6 +109,13 @@ techdocs:
     runIn: 'local'
   publisher:
     type: 'local'
+  # TechDocs runs every rendered page through DOMPurify, and <iframe> is not in the
+  # default tag allowlist — it is added back only for the hosts listed here, matched
+  # exactly against the src URL's host. Without this the YouTube embed on the Learn
+  # More page is silently removed from the DOM. Pair with backend.csp.frame-src above.
+  sanitizer:
+    allowedIframeHosts:
+      - www.youtube.com
 
 enableExperimentalRedirectFlow: true
 
