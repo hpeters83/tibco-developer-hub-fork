@@ -12884,6 +12884,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@spotify/prettier-config@npm:^12.0.0":
+  version: 12.0.0
+  resolution: "@spotify/prettier-config@npm:12.0.0"
+  peerDependencies:
+    prettier: 2.x
+  checksum: 10c0/c19ea09a0c6937dc08917a5890a01c800450ed8f20f614ec2239e09a5897a7d40eb28e5af70ae58c7f41d56769c0fc516ab0ae672d2fd7585016cd54ad514336
+  languageName: node
+  linkType: hard
+
 "@standard-schema/spec@npm:^1.1.0":
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
@@ -15026,6 +15035,13 @@ __metadata:
   version: 4.17.24
   resolution: "@types/lodash@npm:4.17.24"
   checksum: 10c0/b72f60d4daacdad1fa643edb3faba204c02a01eb1ac00a83ff73496a6d236fc55e459c06106e8ced42277dba932d087d8fc090f8de4ef590d3f91e6d6f7ce85a
+  languageName: node
+  linkType: hard
+
+"@types/lodash@npm:^4.17.16":
+  version: 4.17.25
+  resolution: "@types/lodash@npm:4.17.25"
+  checksum: 10c0/ca2049f16bf527e04d6e27702e3912a484faaff587de77a5c58e0d243b9292a655e1d7f7e5bdf2ffdf49a76da10673097f8dd4901990679058d47ccd99051877
   languageName: node
   linkType: hard
 
@@ -33743,7 +33759,9 @@ __metadata:
     "@backstage/e2e-test-utils": "npm:^0.1.2"
     "@jest/environment-jsdom-abstract": "npm:^30.0.0"
     "@playwright/test": "npm:^1.32.3"
+    "@spotify/prettier-config": "npm:^12.0.0"
     "@types/jest": "npm:^30.0.0"
+    "@types/lodash": "npm:^4.17.16"
     esbuild: "npm:^0.24.2"
     jest: "npm:^30.2.0"
     jest-sonar-reporter: "npm:^2.0.0"
