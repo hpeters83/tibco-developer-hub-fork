@@ -1,7 +1,7 @@
 # copy this file and rename it to app-config.local.yaml
 # then make any updates as needed
 # all *.local.yaml files are ignored by git so it's safe to define secrets in that file
-define: &docUrl https://docs.tibco.com/go/platform-cp/1.19.0/doc/html#cshid=developer_hub_overview
+define: &docUrl https://docs.tibco.com/go/platform-cp/1.20.0/doc/html#cshid=developer_hub_overview
 app:
   baseUrl: http://localhost:3000
   docUrl: *docUrl
@@ -78,8 +78,6 @@ auth:
   # # on local developer setups only github and guest auth providers are available
   # # Oauthproxy will only be available in Dataplane deployments.
   enableAuthProviders: [guest]
-mcpActions:
-  enabled: false
 
 essentialLocations:
   runScheduler: true # Set to false to disable periodic updates

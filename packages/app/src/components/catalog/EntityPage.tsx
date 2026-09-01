@@ -40,6 +40,7 @@ import {
 import { EntityTechdocsContent } from '@backstage/plugin-techdocs';
 import { Direction } from '@backstage/plugin-catalog-graph';
 import {
+  Entity,
   RELATION_API_CONSUMED_BY,
   RELATION_API_PROVIDED_BY,
   RELATION_CONSUMES_API,
@@ -49,6 +50,9 @@ import {
   RELATION_PART_OF,
   RELATION_PROVIDES_API,
 } from '@backstage/catalog-model';
+import { isMcpServerApiEntity } from '@backstage/catalog-model/alpha';
+import { McpRemotesCard } from './McpRemotesCard';
+import { McpCapabilitiesCard } from './McpCapabilitiesCard';
 
 import { TechDocsAddons } from '@backstage/plugin-techdocs-react';
 import { ReportIssue } from '@backstage/plugin-techdocs-module-addons-contrib';
@@ -300,6 +304,62 @@ const apiPage = (
   </EntityLayout>
 );
 
+// Type guard usable in EntitySwitch.Case (widened to the base Entity type).
+const isMcpServer = (entity: Entity): boolean =>
+  entity.spec !== undefined && isMcpServerApiEntity(entity as any);
+
+const mcpServerApiPage = (
+  <EntityLayout>
+    <EntityLayout.Route path="/" title="Overview">
+      <Grid container spacing={3}>
+        {entityWarningContent}
+        <Grid item md={6}>
+          <EntityAboutCard />
+        </Grid>
+        <Grid item md={6} xs={12}>
+          <EntityIntegrationTopologyCard variant="gridItem" height={400} />
+        </Grid>
+        <Grid item md={4} xs={12}>
+          <EntityLinksCard />
+        </Grid>
+        <Grid container item md={12}>
+          <Grid item md={6}>
+            <EntityProvidingComponentsCard />
+          </Grid>
+          <Grid item md={6}>
+            <EntityConsumingComponentsCard />
+          </Grid>
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/connections" title="Connections">
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <McpRemotesCard />
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/mcp-details" title="MCP Details">
+      <McpCapabilitiesCard />
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/docs" title="Docs">
+      {techdocsContent}
+    </EntityLayout.Route>
+  </EntityLayout>
+);
+
+// API entities render the MCP-specific layout when they are MCP servers,
+// otherwise the standard API page.
+const apiPageSwitch = (
+  <EntitySwitch>
+    <EntitySwitch.Case if={isMcpServer}>{mcpServerApiPage}</EntitySwitch.Case>
+    <EntitySwitch.Case>{apiPage}</EntitySwitch.Case>
+  </EntitySwitch>
+);
+
 const userPage = (
   <EntityLayout>
     <EntityLayout.Route path="/" title="Overview">
@@ -404,7 +464,7 @@ const domainPage = (
 export const entityPage = (
   <EntitySwitch>
     <EntitySwitch.Case if={isKind('component')} children={componentPage} />
-    <EntitySwitch.Case if={isKind('api')} children={apiPage} />
+    <EntitySwitch.Case if={isKind('api')} children={apiPageSwitch} />
     <EntitySwitch.Case if={isKind('group')} children={groupPage} />
     <EntitySwitch.Case if={isKind('user')} children={userPage} />
     <EntitySwitch.Case if={isKind('system')} children={systemPage} />
