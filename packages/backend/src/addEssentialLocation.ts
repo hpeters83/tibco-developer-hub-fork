@@ -3,6 +3,7 @@
  */
 
 import {
+  AuthService,
   coreServices,
   createBackendModule,
   LoggerService,
@@ -25,9 +26,15 @@ const addLocationsToCatalog = async (
   catalogApi: CatalogClient,
   logger: LoggerService,
   locations: Location[],
-  token: string,
+  auth: AuthService,
 ) => {
   try {
+    // Plugin tokens expire after 1h, so mint a fresh one on every run rather
+    // than reusing one from init (the scheduler cadence defaults to 2h).
+    const { token } = await auth.getPluginRequestToken({
+      onBehalfOf: await auth.getOwnServiceCredentials(),
+      targetPluginId: 'catalog',
+    });
     for (const loc of locations) {
       await catalogApi.addLocation(loc, { token });
     }
@@ -65,10 +72,6 @@ export default createBackendModule({
             essentialLocations?.locations &&
             essentialLocations?.locations?.length > 0
           ) {
-            const { token } = await auth.getPluginRequestToken({
-              onBehalfOf: await auth.getOwnServiceCredentials(),
-              targetPluginId: 'catalog',
-            });
             if (essentialLocations?.runScheduler) {
               await scheduler.scheduleTask({
                 frequency: {
@@ -83,7 +86,7 @@ export default createBackendModule({
                     catalogApi,
                     logger,
                     essentialLocations?.locations || [],
-                    token,
+                    auth,
                   );
                 },
               });
@@ -95,7 +98,7 @@ export default createBackendModule({
                 catalogApi,
                 logger,
                 essentialLocations?.locations || [],
-                token,
+                auth,
               );
               logger.info('Essential location added successfully.');
             }, 30 * 1000);
