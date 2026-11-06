@@ -8,11 +8,15 @@
 #      — the secrets-templated app-config.production.yaml is deliberately absent.
 #   3. Default CMD runs the demo config.
 #
+# Keep the alpine base tag, NODE_VERSION / PYTHON_VERSION apk pins and pip
+# installs in sync with `Dockerfile` after every upstream merge: Alpine drops
+# superseded package revisions, so a stale exact pin fails `apk add`.
+#
 # Build is intended to run in CI (GitHub Actions) where RAM is ample; the runtime
 # image is small enough to run on a 2 GB host.
 
 # Stage 1 - Create yarn install skeleton layer
-FROM alpine:3.23.3 AS packages
+FROM alpine:3.24.3 AS packages
 
 WORKDIR /app
 COPY package.json yarn.lock ./
@@ -26,14 +30,13 @@ COPY plugins plugins
 RUN find packages \! -name "package.json" -mindepth 2 -maxdepth 2 -exec rm -rf {} \+
 
 # Stage 2 - Build layer
-FROM alpine:3.23.3 as build
+FROM alpine:3.24.3 as build
 
 RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
 
-ENV NODE_VERSION="24.18.1-r0"
+ENV NODE_VERSION="24.22.1-r1"
 
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
-    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
     apk update && \
     apk add --no-cache nodejs=$NODE_VERSION yarn \
     cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev build-base
@@ -64,15 +67,14 @@ RUN mkdir packages/backend/dist/skeleton packages/backend/dist/bundle \
     && tar xzf packages/backend/dist/bundle.tar.gz -C packages/backend/dist/bundle
 
 # Stage 3 - Node builder layer
-FROM alpine:3.23.3 as node-builder
+FROM alpine:3.24.3 as node-builder
 
 RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
 
-ENV NODE_VERSION="24.18.1-r0"
+ENV NODE_VERSION="24.22.1-r1"
 ENV NODE_ENV=production
 
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
-    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
     apk update && \
     apk add --no-cache nodejs=$NODE_VERSION yarn \
     cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev build-base
@@ -94,19 +96,18 @@ RUN --mount=type=cache,target=/home/nonroot/.yarn/berry/cache,sharing=locked,uid
     yarn workspaces focus --all --production && yarn cache clean --all
 
 # Stage 4 - Final layer
-FROM alpine:3.23.3
+FROM alpine:3.24.3
 
 RUN addgroup -g 65532 -S nonroot && adduser -u 65532 -S -G nonroot nonroot
 
-ENV PYTHON_VERSION="~3.12"
-ENV NODE_VERSION="24.18.1-r0"
+ENV PYTHON_VERSION="~3.14"
+ENV NODE_VERSION="24.22.1-r1"
 ENV NODE_ENV=production
 ENV PYTHON=/usr/bin/python3
 
 RUN apk upgrade --no-cache
 
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,uid=65532,gid=65532 \
-    --mount=type=cache,target=/var/lib/apk,sharing=locked,uid=65532,gid=65532 \
     apk update && \
     apk --no-cache add git \
     nodejs=$NODE_VERSION \
@@ -118,8 +119,19 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs-techdocs-core==1.6.0
-RUN pip3 install setuptools
+RUN pip3 install mkdocs-techdocs-core==1.7.1
+# CVE floors mirrored from the production Dockerfile (see comments there).
+RUN pip3 install 'pygments>=2.21.0' 'pymdown-extensions>=11.0.1,<12' 'mkdocs-material>=9.7.7,<9.8'
+RUN pip3 install 'setuptools>=78.1.1'
+
+# pip is build-time only (techdocs runs the `mkdocs` CLI at runtime); remove it
+# from the venv and the system so its vendored deps don't trip image scanners.
+RUN pip3 cache purge || true; \
+    pip3 uninstall -y pip || true; \
+    apk del py3-pip || true; \
+    rm -rf /usr/lib/python*/site-packages/pip \
+           /usr/lib/python*/ensurepip \
+           "$VIRTUAL_ENV"/lib/python*/site-packages/pip
 
 WORKDIR /app
 
